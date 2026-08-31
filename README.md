@@ -6,7 +6,7 @@ AI-Powered Urban Transit & Navigation Platform Backend built with **Node.js 22**
 
 ## Architecture & Folder Structure
 
-
+```text
 server/
 ├── prisma/
 │   └── schema.prisma         # Database schemas (auth, geo, transit, booking, public)
