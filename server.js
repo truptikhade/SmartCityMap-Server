@@ -60,7 +60,6 @@ const autoStartSimulators = async (io) => {
 
     const today = new Date()
     today.setUTCHours(0, 0, 0, 0)
-
     const endOfDay = new Date()
     endOfDay.setUTCHours(23, 59, 59, 999)
 
