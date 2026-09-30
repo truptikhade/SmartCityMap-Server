@@ -5,23 +5,16 @@ const nodemailer = require('nodemailer')
 // ─────────────────────────────────────────────────────────
 
 const transporter = nodemailer.createTransport({
-  host:
-    process.env.MAIL_HOST ||
-    'smtp.gmail.com',
-
-  port:
-    Number(process.env.MAIL_PORT) || 587,
-
-  secure:
-    Number(process.env.MAIL_PORT) === 465,
-
+  host:process.env.MAIL_HOST ||'smtp.gmail.com',
+  port:Number(process.env.MAIL_PORT) || 587,
+  secure:Number(process.env.MAIL_PORT) === 465,
   auth: {
-    user:
-      process.env.MAIL_USER,
-
-    pass:
-      process.env.MAIL_PASSWORD,
+    user:process.env.MAIL_USER,
+    pass:process.env.MAIL_PASSWORD,
   },
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 15000,
 })
 
 // ─────────────────────────────────────────────────────────
@@ -34,14 +27,11 @@ const sendVerificationEmail = async ({
   verificationUrl,
 }) => {
   await transporter.sendMail({
-    from:
-      process.env.MAIL_FROM ||
-      process.env.MAIL_USER,
+    from:process.env.MAIL_FROM ||process.env.MAIL_USER,
 
     to: email,
 
-    subject:
-      'Verify your SmartCity account',
+    subject:'Verify your SmartCity account',
 
     html: `
       <!DOCTYPE html>
@@ -245,9 +235,7 @@ const sendPasswordResetEmail = async ({
   resetUrl,
 }) => {
   await transporter.sendMail({
-    from:
-      process.env.MAIL_FROM ||
-      process.env.MAIL_USER,
+    from:process.env.MAIL_FROM ||process.env.MAIL_USER,
 
     to: email,
 
