@@ -438,20 +438,9 @@ const getLiveTracking = async (
  */
 
 const FARE_RULES = {
-  bus: {
-    base: 10,
-    perKm: 2.0,
-  },
-
-  train: {
-    base: 15,
-    perKm: 1.5,
-  },
-
-  auto: {
-    base: 30,
-    perKm: 14.0,
-  },
+  bus: {base: 3,perKm: 2.0,},
+  train: {base: 2, perKm: 1.5,},
+  auto: {base: 5,perKm: 14.0,},
 }
 
 const estimateFare = async ({
