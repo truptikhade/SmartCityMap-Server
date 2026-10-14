@@ -1,46 +1,46 @@
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
-const http = require("http");
-const { Server } = require("socket.io");
+import express, { json, urlencoded } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 require("dotenv").config();
 
 //  Import Prisma
-require("./src/config/prisma");
+import "./src/config/prisma";
 
 //  Import Routes
-const authRoutes = require("./src/modules/auth/auth.router");
-const placesRoutes = require("./src/modules/places/places.router");
-const transitRoutes = require("./src/modules/transit/transit.router");
-const bookingRoutes = require("./src/modules/booking/booking.router");
-const paymentRoutes = require("./src/modules/payment/payment.router");
-const aiRoutes = require("./src/modules/ai/ai.router");
-const driverRoutes = require("./src/modules/driver/driver.router");
-const adminRoutes = require("./src/modules/admin/admin.router");
-const rideRoutes = require("./src/modules/ride/ride.router");
+import authRoutes from "./src/modules/auth/auth.router";
+import placesRoutes from "./src/modules/places/places.router";
+import transitRoutes from "./src/modules/transit/transit.router";
+import bookingRoutes from "./src/modules/booking/booking.router";
+import paymentRoutes from "./src/modules/payment/payment.router";
+import aiRoutes from "./src/modules/ai/ai.router";
+import driverRoutes from "./src/modules/driver/driver.router";
+import adminRoutes from "./src/modules/admin/admin.router";
+import rideRoutes from "./src/modules/ride/ride.router";
 
 //  Import Middleware
-const errorHandler = require("./src/middleware/error.middleware");
+import errorHandler from "./src/middleware/error.middleware";
 
 //  Import Socket
-const { initSocket } = require("./src/config/socket");
-const initTrackingSocket = require("./src/sockets/tracking.socket");
-const { initRideSocket } = require("./src/sockets/ride.socket");
+import { initSocket } from "./src/config/socket";
+import initTrackingSocket from "./src/sockets/tracking.socket";
+import { initRideSocket } from "./src/sockets/ride.socket";
 
 //  Rate Limiting
-const {
+import {
   globalLimiter,
   apiLimiter,
-} = require("./src/middleware/rateLimit.middleware");
+} from "./src/middleware/rateLimit.middleware";
 
 //  Create App & Server
 const app = express();
 
 app.set("trust proxy", 1);
 
-const server = http.createServer(app);
+const server = createServer(app);
 
 //  CORS Configuration
 
@@ -173,10 +173,10 @@ app.use(cors(corsOptions));
 
 app.use(morgan("dev"));
 
-app.use(express.json());
+app.use(json());
 
 app.use(
-  express.urlencoded({
+  urlencoded({
     extended: true,
   }),
 );
@@ -260,12 +260,12 @@ server.listen(PORT, async () => {
 
 //  Graceful Shutdown
 
-const prisma = require("./src/config/prisma");
+import { $disconnect } from "./src/config/prisma";
 
 process.on("SIGINT", async () => {
   console.log("\nShutting down gracefully...");
 
-  await prisma.$disconnect();
+  await $disconnect();
 
   server.close(() => {
     console.log("Server closed");
@@ -277,7 +277,7 @@ process.on("SIGINT", async () => {
 process.on("SIGTERM", async () => {
   console.log("\nSIGTERM received...");
 
-  await prisma.$disconnect();
+  await $disconnect();
 
   server.close(() => {
     console.log("Server closed");
@@ -288,7 +288,7 @@ process.on("SIGTERM", async () => {
 
 //  Export
 
-module.exports = {
+export default {
   app,
   io,
 };
