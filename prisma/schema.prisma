@@ -10,9 +10,9 @@ datasource db {
   schemas  = ["auth", "geo", "transit", "booking", "public"]
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // AUTH SCHEMA
-// ─────────────────────────────────────────────────────────
+// 
 
 model User {
   id           String    @id @default(uuid())
@@ -55,9 +55,9 @@ model User {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // DRIVER PROFILE
-// ─────────────────────────────────────────────────────────
+// 
 
 model DriverProfile {
   id            String   @id @default(uuid())
@@ -76,9 +76,9 @@ model DriverProfile {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // VEHICLE
-// ─────────────────────────────────────────────────────────
+// 
 
 model Vehicle {
   id            String  @id @default(uuid())
@@ -111,9 +111,9 @@ model Vehicle {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // VEHICLE CHANGE REQUEST
-// ─────────────────────────────────────────────────────────
+// 
 
 model VehicleChangeRequest {
   id String @id @default(uuid())
@@ -143,9 +143,9 @@ model VehicleChangeRequest {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // SAVED ROUTES
-// ─────────────────────────────────────────────────────────
+// 
 
 model SavedRoute {
   id        String   @id @default(uuid())
@@ -163,9 +163,9 @@ model SavedRoute {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // REVIEW
-// ─────────────────────────────────────────────────────────
+// 
 
 model Review {
   id        String   @id @default(uuid())
@@ -183,9 +183,9 @@ model Review {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // GEO SCHEMA
-// ─────────────────────────────────────────────────────────
+// 
 
 model Place {
   id                String            @id @default(uuid())
@@ -218,9 +218,9 @@ model NearbySpecialty {
   @@schema("geo")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // OLD GEO ROUTING MODELS
-// ─────────────────────────────────────────────────────────
+// 
 
 model Route {
   id          String     @id @default(uuid())
@@ -261,9 +261,9 @@ model Schedule {
   @@schema("geo")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // TRANSIT SCHEMA
-// ─────────────────────────────────────────────────────────
+// 
 
 model TransitRoute {
   id             String   @id @default(uuid())
@@ -356,9 +356,9 @@ model LiveTracking {
   @@schema("transit")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // BOOKING SCHEMA
-// ─────────────────────────────────────────────────────────
+// 
 
 model Booking {
   id             String   @id @default(uuid())
@@ -400,9 +400,9 @@ model Payment {
   @@schema("booking")
 }
 
-// ─────────────────────────────────────────────────────────
+// 
 // ON-DEMAND RIDE REQUEST
-// ─────────────────────────────────────────────────────────
+// 
 
 model RideRequest {
   id String @id @default(uuid())

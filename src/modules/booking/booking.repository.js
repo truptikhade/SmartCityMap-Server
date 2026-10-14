@@ -1,4 +1,4 @@
-const prisma = require('../../config/prisma')
+const prisma = require("../../config/prisma");
 
 const createBooking = async ({
   userId,
@@ -22,7 +22,7 @@ const createBooking = async ({
       seatNumber,
       farePaid,
       travelDate: new Date(travelDate),
-      status: 'pending',
+      status: "pending",
     },
     include: {
       route: true,
@@ -30,8 +30,8 @@ const createBooking = async ({
       boardingStop: true,
       dropStop: true,
     },
-  })
-}
+  });
+};
 
 const findMyBookings = async (userId) => {
   return prisma.booking.findMany({
@@ -48,12 +48,12 @@ const findMyBookings = async (userId) => {
     },
 
     orderBy: {
-      bookedAt: 'desc',
+      bookedAt: "desc",
     },
 
     take: 10,
-  })
-}
+  });
+};
 
 const findBookingById = async (id) => {
   return prisma.booking.findUnique({
@@ -67,8 +67,8 @@ const findBookingById = async (id) => {
       dropStop: true,
       payment: true,
     },
-  })
-}
+  });
+};
 
 const updateBookingStatus = async (id, status) => {
   return prisma.booking.update({
@@ -78,27 +78,23 @@ const updateBookingStatus = async (id, status) => {
     data: {
       status,
     },
-  })
-}
+  });
+};
 
-const isSeatTaken = async ({
-  tripId,
-  seatNumber,
-  travelDate,
-}) => {
+const isSeatTaken = async ({ tripId, seatNumber, travelDate }) => {
   const booking = await prisma.booking.findFirst({
     where: {
       tripId,
       seatNumber,
       travelDate: new Date(travelDate),
       status: {
-        notIn: ['cancelled'],
+        notIn: ["cancelled"],
       },
     },
-  })
+  });
 
-  return !!booking
-}
+  return !!booking;
+};
 
 module.exports = {
   createBooking,
@@ -106,4 +102,4 @@ module.exports = {
   findBookingById,
   updateBookingStatus,
   isSeatTaken,
-}
+};

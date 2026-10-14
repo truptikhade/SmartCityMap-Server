@@ -19,6 +19,7 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.9.1",
     "@prisma/extension-accelerate": "^3.0.1",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
@@ -30,7 +31,9 @@
     "nodemailer": "^10.0.11",
     "openai": "^7.15.0",
     "pg": "^8.23.0",
+    "rate-limit-redis": "^3.1.0",
     "razorpay": "^2.9.8",
+    "redis": "^4.6.13",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
   },

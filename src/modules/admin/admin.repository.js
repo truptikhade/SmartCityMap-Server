@@ -1,8 +1,6 @@
-const prisma = require('../../config/prisma')
+const prisma = require("../../config/prisma");
 
-// --------------------------------------------------
 // FIND ALL DRIVERS
-// --------------------------------------------------
 
 const findAllDrivers = async () => {
   return prisma.driverProfile.findMany({
@@ -36,14 +34,12 @@ const findAllDrivers = async () => {
     },
 
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // FIND DRIVER BY ID
-// --------------------------------------------------
 
 const findDriverById = async (driverId) => {
   return prisma.driverProfile.findUnique({
@@ -79,12 +75,10 @@ const findDriverById = async (driverId) => {
         },
       },
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // APPROVE DRIVER
-// --------------------------------------------------
 
 const approveDriver = async (driverId) => {
   return prisma.driverProfile.update({
@@ -111,12 +105,10 @@ const approveDriver = async (driverId) => {
 
       vehicles: true,
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // REJECT DRIVER
-// --------------------------------------------------
 
 const rejectDriver = async (driverId) => {
   return prisma.driverProfile.update({
@@ -144,17 +136,15 @@ const rejectDriver = async (driverId) => {
 
       vehicles: true,
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // FIND PENDING VEHICLE CHANGE REQUESTS
-// --------------------------------------------------
 
 const findPendingVehicleChangeRequests = async () => {
   return prisma.vehicleChangeRequest.findMany({
     where: {
-      status: 'PENDING',
+      status: "PENDING",
     },
 
     include: {
@@ -187,18 +177,14 @@ const findPendingVehicleChangeRequests = async () => {
     },
 
     orderBy: {
-      requestedAt: 'asc',
+      requestedAt: "asc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // FIND VEHICLE CHANGE REQUEST
-// --------------------------------------------------
 
-const findVehicleChangeRequestById = async (
-  requestId
-) => {
+const findVehicleChangeRequestById = async (requestId) => {
   return prisma.vehicleChangeRequest.findUnique({
     where: {
       id: requestId,
@@ -222,191 +208,163 @@ const findVehicleChangeRequestById = async (
 
       vehicle: true,
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // APPROVE VEHICLE CHANGE REQUEST
-// --------------------------------------------------
 
-const approveVehicleChangeRequest = async (
-  requestId
-) => {
+const approveVehicleChangeRequest = async (requestId) => {
   return prisma.$transaction(async (tx) => {
-    const request =
-      await tx.vehicleChangeRequest.findUnique({
-        where: {
-          id: requestId,
-        },
+    const request = await tx.vehicleChangeRequest.findUnique({
+      where: {
+        id: requestId,
+      },
 
-        include: {
-          vehicle: true,
-        },
-      })
+      include: {
+        vehicle: true,
+      },
+    });
 
     if (!request) {
-      return null
+      return null;
     }
 
-    if (request.status !== 'PENDING') {
-      throw new Error(
-        'This vehicle change request has already been reviewed'
-      )
+    if (request.status !== "PENDING") {
+      throw new Error("This vehicle change request has already been reviewed");
     }
 
     // Make sure another vehicle does not already
     // use the requested vehicle number.
-    const existingVehicle =
-      await tx.vehicle.findUnique({
-        where: {
-          vehicleNumber: request.vehicleNumber,
-        },
-      })
+    const existingVehicle = await tx.vehicle.findUnique({
+      where: {
+        vehicleNumber: request.vehicleNumber,
+      },
+    });
 
-    if (
-      existingVehicle &&
-      existingVehicle.id !== request.vehicleId
-    ) {
-      throw new Error(
-        'The requested vehicle number is already registered'
-      )
+    if (existingVehicle && existingVehicle.id !== request.vehicleId) {
+      throw new Error("The requested vehicle number is already registered");
     }
 
     // Update the existing vehicle.
-    const updatedVehicle =
-      await tx.vehicle.update({
-        where: {
-          id: request.vehicleId,
-        },
+    const updatedVehicle = await tx.vehicle.update({
+      where: {
+        id: request.vehicleId,
+      },
 
-        data: {
-          vehicleNumber:
-            request.vehicleNumber,
+      data: {
+        vehicleNumber: request.vehicleNumber,
 
-          vehicleType:
-            request.vehicleType,
+        vehicleType: request.vehicleType,
 
-          brand:
-            request.brand,
+        brand: request.brand,
 
-          model:
-            request.model,
+        model: request.model,
 
-          color:
-            request.color,
+        color: request.color,
 
-          isActive: true,
+        isActive: true,
 
-          approvalStatus: 'APPROVED',
+        approvalStatus: "APPROVED",
 
-          approvedAt: new Date(),
+        approvedAt: new Date(),
 
-          rejectedAt: null,
+        rejectedAt: null,
 
-          requestedAt: null,
-        },
-      })
+        requestedAt: null,
+      },
+    });
 
     // Mark request approved.
-    const updatedRequest =
-      await tx.vehicleChangeRequest.update({
-        where: {
-          id: requestId,
-        },
+    const updatedRequest = await tx.vehicleChangeRequest.update({
+      where: {
+        id: requestId,
+      },
 
-        data: {
-          status: 'APPROVED',
-          reviewedAt: new Date(),
-        },
+      data: {
+        status: "APPROVED",
+        reviewedAt: new Date(),
+      },
 
-        include: {
-          driver: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  fname: true,
-                  lname: true,
-                  email: true,
-                  phone: true,
-                  role: true,
-                },
+      include: {
+        driver: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fname: true,
+                lname: true,
+                email: true,
+                phone: true,
+                role: true,
               },
             },
           },
-
-          vehicle: true,
         },
-      })
+
+        vehicle: true,
+      },
+    });
 
     return {
       request: updatedRequest,
       vehicle: updatedVehicle,
-    }
-  })
-}
+    };
+  });
+};
 
-// --------------------------------------------------
 // REJECT VEHICLE CHANGE REQUEST
-// --------------------------------------------------
 
-const rejectVehicleChangeRequest = async (
-  requestId
-) => {
+const rejectVehicleChangeRequest = async (requestId) => {
   return prisma.$transaction(async (tx) => {
-    const request =
-      await tx.vehicleChangeRequest.findUnique({
-        where: {
-          id: requestId,
-        },
-      })
+    const request = await tx.vehicleChangeRequest.findUnique({
+      where: {
+        id: requestId,
+      },
+    });
 
     if (!request) {
-      return null
+      return null;
     }
 
-    if (request.status !== 'PENDING') {
-      throw new Error(
-        'This vehicle change request has already been reviewed'
-      )
+    if (request.status !== "PENDING") {
+      throw new Error("This vehicle change request has already been reviewed");
     }
 
     // IMPORTANT:
     // The actual vehicle is NOT modified.
-    const updatedRequest =
-      await tx.vehicleChangeRequest.update({
-        where: {
-          id: requestId,
-        },
+    const updatedRequest = await tx.vehicleChangeRequest.update({
+      where: {
+        id: requestId,
+      },
 
-        data: {
-          status: 'REJECTED',
-          reviewedAt: new Date(),
-        },
+      data: {
+        status: "REJECTED",
+        reviewedAt: new Date(),
+      },
 
-        include: {
-          driver: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  fname: true,
-                  lname: true,
-                  email: true,
-                  phone: true,
-                  role: true,
-                },
+      include: {
+        driver: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fname: true,
+                lname: true,
+                email: true,
+                phone: true,
+                role: true,
               },
             },
           },
-
-          vehicle: true,
         },
-      })
 
-    return updatedRequest
-  })
-}
+        vehicle: true,
+      },
+    });
+
+    return updatedRequest;
+  });
+};
 
 module.exports = {
   findAllDrivers,
@@ -418,4 +376,4 @@ module.exports = {
   findVehicleChangeRequestById,
   approveVehicleChangeRequest,
   rejectVehicleChangeRequest,
-}
+};

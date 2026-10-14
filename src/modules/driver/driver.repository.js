@@ -1,8 +1,6 @@
-const prisma = require('../../config/prisma')
+const prisma = require("../../config/prisma");
 
-// --------------------------------------------------
 // FIND DRIVER BY USER ID
-// --------------------------------------------------
 
 const findDriverByUserId = async (userId) => {
   return prisma.driverProfile.findUnique({
@@ -27,45 +25,26 @@ const findDriverByUserId = async (userId) => {
 
       vehicles: {
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       },
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // UPDATE DRIVER PERSONAL DETAILS
-// --------------------------------------------------
 
-const updateDriverProfile = async ({
-  userId,
-  fname,
-  lname,
-  email,
-  phone,
-}) => {
+const updateDriverProfile = async ({ userId, fname, lname, email, phone }) => {
   return prisma.user.update({
     where: {
       id: userId,
     },
 
     data: {
-      ...(fname !== undefined && {
-        fname,
-      }),
-
-      ...(lname !== undefined && {
-        lname,
-      }),
-
-      ...(email !== undefined && {
-        email,
-      }),
-
-      ...(phone !== undefined && {
-        phone,
-      }),
+      ...(fname !== undefined && { fname }),
+      ...(lname !== undefined && { lname }),
+      ...(email !== undefined && { email }),
+      ...(phone !== undefined && { phone }),
     },
 
     select: {
@@ -79,17 +58,12 @@ const updateDriverProfile = async ({
       isActive: true,
       isVerified: true,
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // UPDATE DRIVER AVAILABILITY
-// --------------------------------------------------
 
-const updateAvailability = async ({
-  userId,
-  isAvailable,
-}) => {
+const updateAvailability = async ({ userId, isAvailable }) => {
   return prisma.driverProfile.update({
     where: {
       userId,
@@ -114,16 +88,14 @@ const updateAvailability = async ({
 
       vehicles: {
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       },
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // FIND DRIVER VEHICLES
-// --------------------------------------------------
 
 const findDriverVehicles = async (userId) => {
   return prisma.vehicle.findMany({
@@ -134,14 +106,12 @@ const findDriverVehicles = async (userId) => {
     },
 
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // FIND ACTIVE APPROVED VEHICLE
-// --------------------------------------------------
 
 const findActiveDriverVehicle = async (userId) => {
   return prisma.vehicle.findFirst({
@@ -152,18 +122,16 @@ const findActiveDriverVehicle = async (userId) => {
 
       isActive: true,
 
-      approvalStatus: 'APPROVED',
+      approvalStatus: "APPROVED",
     },
 
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // CREATE VEHICLE CHANGE REQUEST
-// --------------------------------------------------
 
 const createVehicleChangeRequest = async ({
   userId,
@@ -178,16 +146,14 @@ const createVehicleChangeRequest = async ({
       where: {
         userId,
       },
-    })
+    });
 
     if (!driver) {
-      throw new Error('Driver profile not found')
+      throw new Error("Driver profile not found");
     }
 
     if (!driver.isApproved) {
-      throw new Error(
-        'Your driver account is not approved yet'
-      )
+      throw new Error("Your driver account is not approved yet");
     }
 
     // Find the currently active vehicle.
@@ -195,51 +161,44 @@ const createVehicleChangeRequest = async ({
       where: {
         driverId: driver.id,
         isActive: true,
-        approvalStatus: 'APPROVED',
+        approvalStatus: "APPROVED",
       },
 
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
-    })
+    });
 
     if (!currentVehicle) {
-      throw new Error(
-        'No active approved vehicle was found'
-      )
+      throw new Error("No active approved vehicle was found");
     }
 
     // Only one pending vehicle change request at a time.
-    const existingPending =
-      await tx.vehicleChangeRequest.findFirst({
-        where: {
-          driverId: driver.id,
-          status: 'PENDING',
-        },
-      })
+    const existingPending = await tx.vehicleChangeRequest.findFirst({
+      where: {
+        driverId: driver.id,
+        status: "PENDING",
+      },
+    });
 
     if (existingPending) {
       throw new Error(
-        'You already have a vehicle change request pending approval'
-      )
+        "You already have a vehicle change request pending approval",
+      );
     }
 
     // Check whether the requested number belongs to
     // another vehicle.
-    const existingVehicle =
-      await tx.vehicle.findUnique({
-        where: {
-          vehicleNumber,
-        },
-      })
+    const existingVehicle = await tx.vehicle.findUnique({
+      where: {
+        vehicleNumber,
+      },
+    });
 
-    if (
-      existingVehicle &&
-      existingVehicle.id !== currentVehicle.id
-    ) {
+    if (existingVehicle && existingVehicle.id !== currentVehicle.id) {
       throw new Error(
-        'Vehicle number is already registered with another vehicle'
-      )
+        "Vehicle number is already registered with another vehicle",
+      );
     }
 
     // Create a request instead of creating a new vehicle.
@@ -254,7 +213,7 @@ const createVehicleChangeRequest = async ({
         model: model || null,
         color: color || null,
 
-        status: 'PENDING',
+        status: "PENDING",
 
         requestedAt: new Date(),
       },
@@ -262,13 +221,11 @@ const createVehicleChangeRequest = async ({
       include: {
         vehicle: true,
       },
-    })
-  })
-}
+    });
+  });
+};
 
-// --------------------------------------------------
 // FIND DRIVER VEHICLE CHANGE REQUESTS
-// --------------------------------------------------
 
 const findVehicleChangeRequests = async (userId) => {
   return prisma.vehicleChangeRequest.findMany({
@@ -283,75 +240,63 @@ const findVehicleChangeRequests = async (userId) => {
     },
 
     orderBy: {
-      requestedAt: 'desc',
+      requestedAt: "desc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // RIDE SUMMARY
-// --------------------------------------------------
 
 const getRideSummary = async (driverId) => {
-  const [
-    totalTrips,
-    completedTrips,
-    cancelledTrips,
-    earnings,
-  ] = await Promise.all([
-    prisma.rideRequest.count({
-      where: {
-        driverId,
-      },
-    }),
+  const [totalTrips, completedTrips, cancelledTrips, earnings] =
+    await Promise.all([
+      prisma.rideRequest.count({
+        where: {
+          driverId,
+        },
+      }),
 
-    prisma.rideRequest.count({
-      where: {
-        driverId,
-        status: 'COMPLETED',
-      },
-    }),
+      prisma.rideRequest.count({
+        where: {
+          driverId,
+          status: "COMPLETED",
+        },
+      }),
 
-    prisma.rideRequest.count({
-      where: {
-        driverId,
-        status: 'CANCELLED',
-      },
-    }),
+      prisma.rideRequest.count({
+        where: {
+          driverId,
+          status: "CANCELLED",
+        },
+      }),
 
-    prisma.rideRequest.aggregate({
-      where: {
-        driverId,
-        status: 'COMPLETED',
-      },
+      prisma.rideRequest.aggregate({
+        where: {
+          driverId,
+          status: "COMPLETED",
+        },
 
-      _sum: {
-        finalFare: true,
-      },
-    }),
-  ])
+        _sum: {
+          finalFare: true,
+        },
+      }),
+    ]);
 
   return {
     totalTrips,
     completedTrips,
     cancelledTrips,
 
-    totalEarnings: Number(
-      earnings._sum.finalFare || 0
-    ),
-  }
-}
+    totalEarnings: Number(earnings._sum.finalFare || 0),
+  };
+};
 
-// --------------------------------------------------
 // PENDING RIDES
-// --------------------------------------------------
 
-const findPendingRideRequests = async ({
-  vehicleType,
-}) => {
+const findPendingRideRequests = async ({ vehicleType }) => {
   return prisma.rideRequest.findMany({
     where: {
-      status: 'REQUESTED',
+      status: "REQUESTED",
       vehicleType,
     },
 
@@ -368,14 +313,12 @@ const findPendingRideRequests = async ({
     },
 
     orderBy: {
-      requestedAt: 'asc',
+      requestedAt: "asc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // ACTIVE RIDE
-// --------------------------------------------------
 
 const findActiveRide = async (driverId) => {
   return prisma.rideRequest.findFirst({
@@ -384,11 +327,11 @@ const findActiveRide = async (driverId) => {
 
       status: {
         in: [
-          'ACCEPTED',
-          'DRIVER_ARRIVING',
-          'DRIVER_ARRIVED',
-          'OTP_VERIFIED',
-          'IN_PROGRESS',
+          "ACCEPTED",
+          "DRIVER_ARRIVING",
+          "DRIVER_ARRIVED",
+          "OTP_VERIFIED",
+          "IN_PROGRESS",
         ],
       },
     },
@@ -408,19 +351,14 @@ const findActiveRide = async (driverId) => {
     },
 
     orderBy: {
-      acceptedAt: 'desc',
+      acceptedAt: "desc",
     },
-  })
-}
+  });
+};
 
-// --------------------------------------------------
 // RECENT RIDES
-// --------------------------------------------------
 
-const findRecentRides = async (
-  driverId,
-  limit = 10
-) => {
+const findRecentRides = async (driverId, limit = 10) => {
   return prisma.rideRequest.findMany({
     where: {
       driverId,
@@ -441,12 +379,12 @@ const findRecentRides = async (
     },
 
     orderBy: {
-      requestedAt: 'desc',
+      requestedAt: "desc",
     },
 
     take: limit,
-  })
-}
+  });
+};
 
 module.exports = {
   findDriverByUserId,
@@ -460,4 +398,4 @@ module.exports = {
   findPendingRideRequests,
   findActiveRide,
   findRecentRides,
-}
+};

@@ -1,101 +1,60 @@
-const Joi = require('joi')
+const Joi = require("joi");
 
 const createRouteSchema = Joi.object({
-  name: Joi.string()
-    .min(2)
-    .required(),
+  name: Joi.string().min(2).required(),
 
   transitType: Joi.string()
-    .valid(
-      'bus',
-      'train',
-      'auto',
-      'shuttle',
-      'cab',
-      'metro'
-    )
+    .valid("bus", "train", "auto", "shuttle", "cab", "metro")
     .required(),
 
-  startPoint: Joi.string()
-    .required(),
+  startPoint: Joi.string().required(),
 
-  endPoint: Joi.string()
-    .required(),
+  endPoint: Joi.string().required(),
 
   baseFare: Joi.number()
     .min(0)
+
     .required(),
 
-  perKmRate: Joi.number()
-    .min(0)
-    .required(),
-})
+  perKmRate: Joi.number().min(0).required(),
+});
 
 const addStopSchema = Joi.object({
-  name: Joi.string()
-    .min(2)
-    .required(),
+  name: Joi.string().min(2).required(),
 
-  lat: Joi.number()
-    .required(),
+  lat: Joi.number().required(),
 
-  lng: Joi.number()
-    .required(),
+  lng: Joi.number().required(),
 
-  sequence: Joi.number()
-    .integer()
-    .min(0)
-    .required(),
-})
+  sequence: Joi.number().integer().min(0).required(),
+});
 
 const nearbyStopsSchema = Joi.object({
-  lat: Joi.number()
-    .required(),
+  lat: Joi.number().required(),
 
-  lng: Joi.number()
-    .required(),
+  lng: Joi.number().required(),
 
-  radius: Joi.number()
-    .min(100)
-    .max(10000)
-    .default(1500),
-})
+  radius: Joi.number().min(100).max(10000).default(1500),
+});
 
 const addScheduleSchema = Joi.object({
-  departureTime: Joi.string()
-    .required(),
+  departureTime: Joi.string().required(),
 
-  arrivalTime: Joi.string()
-    .required(),
+  arrivalTime: Joi.string().required(),
 
   daysActive: Joi.array()
-    .items(
-      Joi.string().valid(
-        'mon',
-        'tue',
-        'wed',
-        'thu',
-        'fri',
-        'sat',
-        'sun'
-      )
-    )
+    .items(Joi.string().valid("mon", "tue", "wed", "thu", "fri", "sat", "sun"))
     .min(1)
     .required(),
 
-  vehicleNumber: Joi.string()
-    .allow('', null),
-})
+  vehicleNumber: Joi.string().allow("", null),
+});
 
 const fareEstimateSchema = Joi.object({
-  routeId: Joi.string()
-    .uuid()
-    .required(),
+  routeId: Joi.string().uuid().required(),
 
-  distanceKm: Joi.number()
-    .positive()
-    .required(),
-})
+  distanceKm: Joi.number().positive().required(),
+});
 
 module.exports = {
   createRouteSchema,
@@ -103,4 +62,4 @@ module.exports = {
   nearbyStopsSchema,
   addScheduleSchema,
   fareEstimateSchema,
-}
+};

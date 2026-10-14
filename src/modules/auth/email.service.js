@@ -1,37 +1,32 @@
-const nodemailer = require('nodemailer')
+const nodemailer = require("nodemailer");
 
-// ─────────────────────────────────────────────────────────
+//
 // MAIL TRANSPORTER
-// ─────────────────────────────────────────────────────────
+//
 
 const transporter = nodemailer.createTransport({
-  host:process.env.MAIL_HOST ||'smtp.gmail.com',
-  port:Number(process.env.MAIL_PORT) || 587,
-  secure:Number(process.env.MAIL_PORT) === 465,
+  host: process.env.MAIL_HOST || "smtp.gmail.com",
+  port: Number(process.env.MAIL_PORT) || 587,
+  secure: Number(process.env.MAIL_PORT) === 465,
   auth: {
-    user:process.env.MAIL_USER,
-    pass:process.env.MAIL_PASSWORD,
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASSWORD,
   },
   connectionTimeout: 15000,
   greetingTimeout: 15000,
   socketTimeout: 15000,
-})
-
-// ─────────────────────────────────────────────────────────
+});
+//
 // EMAIL VERIFICATION
-// ─────────────────────────────────────────────────────────
+//
 
-const sendVerificationEmail = async ({
-  email,
-  fname,
-  verificationUrl,
-}) => {
+const sendVerificationEmail = async ({ email, fname, verificationUrl }) => {
   await transporter.sendMail({
-    from:process.env.MAIL_FROM ||process.env.MAIL_USER,
+    from: process.env.MAIL_FROM || process.env.MAIL_USER,
 
     to: email,
 
-    subject:'Verify your SmartCity account',
+    subject: "Verify your SmartCity account",
 
     html: `
       <!DOCTYPE html>
@@ -130,7 +125,7 @@ const sendVerificationEmail = async ({
                   line-height: 1.6;
                 "
               >
-                Hi ${fname || 'there'},
+                Hi ${fname || "there"},
               </p>
 
               <p
@@ -222,25 +217,20 @@ const sendVerificationEmail = async ({
         </body>
       </html>
     `,
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 // PASSWORD RESET
-// ─────────────────────────────────────────────────────────
+//
 
-const sendPasswordResetEmail = async ({
-  email,
-  fname,
-  resetUrl,
-}) => {
+const sendPasswordResetEmail = async ({ email, fname, resetUrl }) => {
   await transporter.sendMail({
-    from:process.env.MAIL_FROM ||process.env.MAIL_USER,
+    from: process.env.MAIL_FROM || process.env.MAIL_USER,
 
     to: email,
 
-    subject:
-      'Reset your SmartCity password',
+    subject: "Reset your SmartCity password",
 
     html: `
       <!DOCTYPE html>
@@ -339,7 +329,7 @@ const sendPasswordResetEmail = async ({
                   line-height: 1.6;
                 "
               >
-                Hi ${fname || 'there'},
+                Hi ${fname || "there"},
               </p>
 
               <p
@@ -432,12 +422,12 @@ const sendPasswordResetEmail = async ({
         </body>
       </html>
     `,
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
-}
+};

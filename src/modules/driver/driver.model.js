@@ -1,6 +1,6 @@
 const driverModel = (driverProfile) => {
   if (!driverProfile) {
-    return null
+    return null;
   }
 
   return {
@@ -28,47 +28,39 @@ const driverModel = (driverProfile) => {
         }
       : null,
 
-    vehicles: (driverProfile.vehicles || []).map(
-      (vehicle) => ({
-        id: vehicle.id,
-        vehicleNumber: vehicle.vehicleNumber,
-        vehicleType: vehicle.vehicleType,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        color: vehicle.color,
-        isActive: vehicle.isActive,
+    vehicles: (driverProfile.vehicles || []).map((vehicle) => ({
+      id: vehicle.id,
+      vehicleNumber: vehicle.vehicleNumber,
+      vehicleType: vehicle.vehicleType,
+      brand: vehicle.brand,
+      model: vehicle.model,
+      color: vehicle.color,
+      isActive: vehicle.isActive,
 
-        // Kept for compatibility with your current UI.
-        approvalStatus:
-          vehicle.approvalStatus || 'APPROVED',
+      // Kept for compatibility with your current UI.
+      approvalStatus: vehicle.approvalStatus || "APPROVED",
 
-        requestedAt:
-          vehicle.requestedAt || null,
+      requestedAt: vehicle.requestedAt || null,
 
-        approvedAt:
-          vehicle.approvedAt || null,
+      approvedAt: vehicle.approvedAt || null,
 
-        rejectedAt:
-          vehicle.rejectedAt || null,
+      rejectedAt: vehicle.rejectedAt || null,
 
-        createdAt: vehicle.createdAt,
-        updatedAt: vehicle.updatedAt,
-      })
-    ),
+      createdAt: vehicle.createdAt,
+      updatedAt: vehicle.updatedAt,
+    })),
 
     createdAt: driverProfile.createdAt,
 
     updatedAt: driverProfile.updatedAt,
-  }
-}
+  };
+};
 
-// --------------------------------------------------
 // VEHICLE CHANGE REQUEST MODEL
-// --------------------------------------------------
 
 const vehicleChangeRequestModel = (request) => {
   if (!request) {
-    return null
+    return null;
   }
 
   return {
@@ -97,20 +89,18 @@ const vehicleChangeRequestModel = (request) => {
     currentVehicle: request.vehicle
       ? {
           id: request.vehicle.id,
-          vehicleNumber:
-            request.vehicle.vehicleNumber,
-          vehicleType:
-            request.vehicle.vehicleType,
+          vehicleNumber: request.vehicle.vehicleNumber,
+          vehicleType: request.vehicle.vehicleType,
           brand: request.vehicle.brand,
           model: request.vehicle.model,
           color: request.vehicle.color,
           isActive: request.vehicle.isActive,
         }
       : null,
-  }
-}
+  };
+};
 
 module.exports = {
   driverModel,
   vehicleChangeRequestModel,
-}
+};

@@ -1,24 +1,13 @@
-const express = require('express')
+const express = require("express");
 
-const router = express.Router()
+const router = express.Router();
 
-const controller =
-  require('./ai.controller')
+const controller = require("./ai.controller");
 
-const {
-  protect,
-} = require('../../middleware/auth.middleware')
+const { protect } = require("../../middleware/auth.middleware");
 
-router.get(
-  '/recommendations',
-  protect,
-  controller.getRecommendations
-)
+router.get("/recommendations", protect, controller.getRecommendations);
 
-router.get(
-  '/specialties/:placeId',
-  protect,
-  controller.getSpecialties
-)
+router.get("/specialties/:placeId", protect, controller.getSpecialties);
 
-module.exports = router
+module.exports = router;

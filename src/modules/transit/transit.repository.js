@@ -1,36 +1,36 @@
-const prisma = require('../../config/prisma')
+const prisma = require("../../config/prisma");
 
 const findAllRoutes = async (transitType) => {
-  const where = { isActive: true }
-  if (transitType) where.transitType = transitType
+  const where = { isActive: true };
+  if (transitType) where.transitType = transitType;
 
   return prisma.transitRoute.findMany({
     where,
-    orderBy: { routeName: 'asc' },
-  })
-}
+    orderBy: { routeName: "asc" },
+  });
+};
 
 const findAllRoutesWithStops = async (date) => {
   const startDate = date
     ? new Date(`${date}T00:00:00.000`)
-    : new Date(new Date().setHours(0, 0, 0, 0))
+    : new Date(new Date().setHours(0, 0, 0, 0));
 
   const endDate = date
     ? new Date(`${date}T23:59:59.999`)
-    : new Date(new Date().setHours(23, 59, 59, 999))
+    : new Date(new Date().setHours(23, 59, 59, 999));
 
   return prisma.transitRoute.findMany({
     where: {
       isActive: true,
       transitType: {
-        in: ['bus', 'train'],
+        in: ["bus", "train"],
       },
     },
 
     include: {
       stops: {
         orderBy: {
-          stopOrder: 'asc',
+          stopOrder: "asc",
         },
       },
 
@@ -42,7 +42,7 @@ const findAllRoutesWithStops = async (date) => {
           },
 
           status: {
-            in: ['scheduled', 'running'],
+            in: ["scheduled", "running"],
           },
 
           availableSeats: {
@@ -51,7 +51,7 @@ const findAllRoutesWithStops = async (date) => {
         },
 
         orderBy: {
-          departureTime: 'asc',
+          departureTime: "asc",
         },
 
         take: 1,
@@ -59,21 +59,21 @@ const findAllRoutesWithStops = async (date) => {
     },
 
     orderBy: {
-      routeName: 'asc',
+      routeName: "asc",
     },
-  })
-}
+  });
+};
 
 const findRouteById = async (id) => {
-  return prisma.transitRoute.findUnique({ where: { id } })
-}
+  return prisma.transitRoute.findUnique({ where: { id } });
+};
 
 const findStopsByRoute = async (routeId) => {
   return prisma.transitStop.findMany({
     where: { routeId },
-    orderBy: { stopOrder: 'asc' },
-  })
-}
+    orderBy: { stopOrder: "asc" },
+  });
+};
 
 const findNearbyStops = async ({ lat, lng, radius = 1500 }) => {
   return prisma.$queryRaw`
@@ -96,26 +96,26 @@ const findNearbyStops = async ({ lat, lng, radius = 1500 }) => {
     ) <= ${radius}
     ORDER BY distance ASC
     LIMIT 50
-  `
-}
+  `;
+};
 
 const findTripsByRoute = async ({ routeId, date }) => {
   return prisma.trip.findMany({
     where: {
       routeId,
       travelDate: new Date(date),
-      status: { notIn: ['cancelled'] },
+      status: { notIn: ["cancelled"] },
     },
-    orderBy: { departureTime: 'asc' },
-  })
-}
+    orderBy: { departureTime: "asc" },
+  });
+};
 
 const findTripById = async (id) => {
   return prisma.trip.findUnique({
     where: { id },
     include: { route: true },
-  })
-}
+  });
+};
 
 const findLiveTracking = async (tripId) => {
   return prisma.liveTracking.findUnique({
@@ -131,37 +131,51 @@ const findLiveTracking = async (tripId) => {
         },
       },
     },
-  })
-}
+  });
+};
 
 const upsertLiveTracking = async ({
-  tripId, currentLat, currentLng,
-  currentStopId, nextStopId, speedKmph, bearing, delayMinutes,
+  tripId,
+  currentLat,
+  currentLng,
+  currentStopId,
+  nextStopId,
+  speedKmph,
+  bearing,
+  delayMinutes,
 }) => {
   return prisma.liveTracking.upsert({
     where: { tripId },
     update: {
-      currentLat, currentLng, currentStopId, nextStopId,
-      speedKmph, bearing, delayMinutes,
+      currentLat,
+      currentLng,
+      currentStopId,
+      nextStopId,
+      speedKmph,
+      bearing,
+      delayMinutes,
     },
     create: {
-      tripId, currentLat, currentLng, currentStopId, nextStopId,
-      speedKmph, bearing, delayMinutes: delayMinutes || 0,
+      tripId,
+      currentLat,
+      currentLng,
+      currentStopId,
+      nextStopId,
+      speedKmph,
+      bearing,
+      delayMinutes: delayMinutes || 0,
     },
-  })
-}
+  });
+};
 
-const findRouteWithActiveTrips = async ({
-  routeId,
-  date,
-}) => {
+const findRouteWithActiveTrips = async ({ routeId, date }) => {
   const startDate = date
     ? new Date(`${date}T00:00:00.000`)
-    : new Date(new Date().setHours(0, 0, 0, 0))
+    : new Date(new Date().setHours(0, 0, 0, 0));
 
   const endDate = date
     ? new Date(`${date}T23:59:59.999`)
-    : new Date(new Date().setHours(23, 59, 59, 999))
+    : new Date(new Date().setHours(23, 59, 59, 999));
 
   return prisma.transitRoute.findUnique({
     where: {
@@ -171,7 +185,7 @@ const findRouteWithActiveTrips = async ({
     include: {
       stops: {
         orderBy: {
-          stopOrder: 'asc',
+          stopOrder: "asc",
         },
       },
 
@@ -183,12 +197,12 @@ const findRouteWithActiveTrips = async ({
           },
 
           status: {
-            in: ['scheduled', 'running'],
+            in: ["scheduled", "running"],
           },
         },
 
         orderBy: {
-          departureTime: 'asc',
+          departureTime: "asc",
         },
 
         include: {
@@ -201,10 +215,8 @@ const findRouteWithActiveTrips = async ({
         },
       },
     },
-  })
-}
-
-
+  });
+};
 
 module.exports = {
   findAllRoutes,
@@ -217,4 +229,4 @@ module.exports = {
   findLiveTracking,
   upsertLiveTracking,
   findRouteWithActiveTrips,
-}
+};

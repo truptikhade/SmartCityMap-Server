@@ -1,6 +1,6 @@
 const rideModel = (ride) => {
   if (!ride) {
-    return null
+    return null;
   }
 
   return {
@@ -67,14 +67,14 @@ const rideModel = (ride) => {
 
     createdAt: ride.createdAt,
     updatedAt: ride.updatedAt,
-  }
-}
+  };
+};
 
 const rideListModel = (rides = []) => {
-  return rides.map((ride) => rideModel(ride))
-}
+  return rides.map((ride) => rideModel(ride));
+};
 
 module.exports = {
   rideModel,
   rideListModel,
-}
+};

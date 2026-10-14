@@ -1,44 +1,38 @@
-const prisma = require('../../config/prisma')
+const prisma = require("../../config/prisma");
 
-// ─────────────────────────────────────────────────────────
+//
 // USER QUERIES
-// ─────────────────────────────────────────────────────────
+//
 
 const findUserByEmail = async (email) => {
   return prisma.user.findUnique({
     where: {
       email,
     },
-  })
-}
+  });
+};
 
 const findUserByPhone = async (phone) => {
   return prisma.user.findUnique({
     where: {
       phone,
     },
-  })
-}
+  });
+};
 
 const findUserById = async (id) => {
   return prisma.user.findUnique({
     where: {
       id,
     },
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 // USER CREATION
-// ─────────────────────────────────────────────────────────
+//
 
-const createUser = async ({
-  fname,
-  lname,
-  email,
-  phone,
-  passwordHash,
-}) => {
+const createUser = async ({ fname, lname, email, phone, passwordHash }) => {
   return prisma.user.create({
     data: {
       fname,
@@ -47,28 +41,28 @@ const createUser = async ({
       phone,
       passwordHash,
     },
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 // DRIVER REGISTRATION
-// ─────────────────────────────────────────────────────────
+//
 
 const findDriverByLicenseNumber = async (licenseNumber) => {
   return prisma.driverProfile.findUnique({
     where: {
       licenseNumber,
     },
-  })
-}
+  });
+};
 
 const findVehicleByNumber = async (vehicleNumber) => {
   return prisma.vehicle.findUnique({
     where: {
       vehicleNumber,
     },
-  })
-}
+  });
+};
 
 const createDriver = async ({
   fname,
@@ -91,9 +85,9 @@ const createDriver = async ({
         email,
         phone,
         passwordHash,
-        role: 'driver',
+        role: "driver",
       },
-    })
+    });
 
     const driverProfile = await tx.driverProfile.create({
       data: {
@@ -102,7 +96,7 @@ const createDriver = async ({
         isApproved: false,
         isAvailable: false,
       },
-    })
+    });
 
     const vehicle = await tx.vehicle.create({
       data: {
@@ -114,19 +108,19 @@ const createDriver = async ({
         color,
         isActive: true,
       },
-    })
+    });
 
     return {
       user,
       driverProfile,
       vehicle,
-    }
-  })
-}
+    };
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 // USER UPDATE
-// ─────────────────────────────────────────────────────────
+//
 
 const updateUser = async (id, data) => {
   return prisma.user.update({
@@ -134,8 +128,8 @@ const updateUser = async (id, data) => {
       id,
     },
     data,
-  })
-}
+  });
+};
 
 const updateLastLogin = async (id) => {
   return prisma.user.update({
@@ -145,12 +139,12 @@ const updateLastLogin = async (id) => {
     data: {
       lastLogin: new Date(),
     },
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 // EMAIL VERIFICATION
-// ─────────────────────────────────────────────────────────
+//
 
 const saveEmailVerificationToken = async ({
   userId,
@@ -165,18 +159,16 @@ const saveEmailVerificationToken = async ({
       emailVerificationToken,
       emailVerificationExpires,
     },
-  })
-}
+  });
+};
 
-const findUserByVerificationToken = async (
-  emailVerificationToken
-) => {
+const findUserByVerificationToken = async (emailVerificationToken) => {
   return prisma.user.findFirst({
     where: {
       emailVerificationToken,
     },
-  })
-}
+  });
+};
 
 const clearEmailVerificationToken = async (userId) => {
   return prisma.user.update({
@@ -187,8 +179,8 @@ const clearEmailVerificationToken = async (userId) => {
       emailVerificationToken: null,
       emailVerificationExpires: null,
     },
-  })
-}
+  });
+};
 
 const markEmailVerified = async (userId) => {
   return prisma.user.update({
@@ -200,12 +192,12 @@ const markEmailVerified = async (userId) => {
       emailVerificationToken: null,
       emailVerificationExpires: null,
     },
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 // PASSWORD RESET
-// ─────────────────────────────────────────────────────────
+//
 
 const savePasswordResetToken = async ({
   userId,
@@ -220,16 +212,16 @@ const savePasswordResetToken = async ({
       resetPasswordToken,
       resetPasswordExpires,
     },
-  })
-}
+  });
+};
 
 const findUserByResetToken = async (resetPasswordToken) => {
   return prisma.user.findFirst({
     where: {
       resetPasswordToken,
     },
-  })
-}
+  });
+};
 
 const clearPasswordResetToken = async (userId) => {
   return prisma.user.update({
@@ -240,10 +232,10 @@ const clearPasswordResetToken = async (userId) => {
       resetPasswordToken: null,
       resetPasswordExpires: null,
     },
-  })
-}
+  });
+};
 
-// ─────────────────────────────────────────────────────────
+//
 
 module.exports = {
   findUserByEmail,
@@ -269,4 +261,4 @@ module.exports = {
   savePasswordResetToken,
   findUserByResetToken,
   clearPasswordResetToken,
-}
+};

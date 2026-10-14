@@ -1,4 +1,4 @@
-const prisma = require('../../config/prisma')
+const prisma = require("../../config/prisma");
 
 const createPayment = async ({ bookingId, amount, method, transactionId }) => {
   return prisma.payment.create({
@@ -7,37 +7,37 @@ const createPayment = async ({ bookingId, amount, method, transactionId }) => {
       amount,
       method,
       transactionId,
-      status: 'pending',
+      status: "pending",
     },
-  })
-}
+  });
+};
 
 const findByBookingId = async (bookingId) => {
   return prisma.payment.findUnique({
-    where:   { bookingId },
+    where: { bookingId },
     include: { booking: true },
-  })
-}
+  });
+};
 
 const findByTransactionId = async (transactionId) => {
   return prisma.payment.findUnique({
     where: { transactionId },
-  })
-}
+  });
+};
 
 const updatePaymentStatus = async (transactionId, status) => {
   return prisma.payment.update({
     where: { transactionId },
-    data:  {
+    data: {
       status,
-      paidAt: status === 'success' ? new Date() : null,
+      paidAt: status === "success" ? new Date() : null,
     },
-  })
-}
+  });
+};
 
 module.exports = {
   createPayment,
   findByBookingId,
   findByTransactionId,
   updatePaymentStatus,
-}
+};

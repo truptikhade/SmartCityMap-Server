@@ -1,310 +1,159 @@
-const { Server } = require('socket.io')
-const jwt = require('jsonwebtoken')
-const prisma = require('../config/prisma')
+const { Server } = require("socket.io");
+const { createAdapter } = require("@socket.io/redis-adapter");
+const jwt = require("jsonwebtoken");
+const prisma = require("../config/prisma");
+const redis = require("./redis");
 
-let io = null
+let io = null;
 
-// --------------------------------------------------
-// Initialize Socket.IO
-// --------------------------------------------------
-
-const initSocket = (server) => {
+/**
+ * Initialize Socket.IO Server with Redis Adapter, JWT Auth, and Event Handlers
+ */
+const initSocket = async (server) => {
   io = new Server(server, {
     cors: {
-      origin:
-        process.env.CLIENT_URL ||
-        'http://localhost:3000',
-
-      methods: [
-        'GET',
-        'POST',
-      ],
-
+      origin: process.env.CLIENT_URL || "http://localhost:3000",
+      methods: ["GET", "POST"],
       credentials: true,
     },
-  })
+  });
 
-  // ------------------------------------------------
-  // Socket authentication
-  // ------------------------------------------------
+  // Redis adapter for scaling across horizontal instances
+  if (redis.isAvailable()) {
+    const pubClient = redis.client.duplicate();
+    const subClient = redis.client.duplicate();
 
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    io.adapter(createAdapter(pubClient, subClient));
+  }
+
+  // Socket Authentication Middleware
   io.use(async (socket, next) => {
     try {
       const token =
         socket.handshake.auth?.token ||
-        socket.handshake.headers?.authorization?.split(
-          ' '
-        )[1]
+        socket.handshake.headers?.authorization?.split(" ")[1];
 
       if (!token) {
-        return next(
-          new Error(
-            'Authentication required'
-          )
-        )
+        return next(new Error("Authentication required"));
       }
 
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET
-      )
-
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       if (!decoded?.id) {
-        return next(
-          new Error(
-            'Invalid authentication token'
-          )
-        )
+        return next(new Error("Invalid authentication token"));
       }
 
-      // ----------------------------------------------
-      // Get current user from database
-      // ----------------------------------------------
-
-      const user =
-        await prisma.user.findUnique({
-          where: {
-            id: decoded.id,
-          },
-
-          select: {
-            id: true,
-            email: true,
-            role: true,
-            isActive: true,
-          },
-        })
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, email: true, role: true, isActive: true },
+      });
 
       if (!user) {
-        return next(
-          new Error(
-            'User account not found'
-          )
-        )
+        return next(new Error("User account not found"));
       }
 
       if (!user.isActive) {
-        return next(
-          new Error(
-            'Your account is deactivated'
-          )
-        )
+        return next(new Error("Your account is deactivated"));
       }
 
-      // ----------------------------------------------
-      // Store authenticated user information
-      // ----------------------------------------------
-
-      socket.userId = user.id
-      socket.role = user.role
-      socket.user = user
-
-      next()
+      // Attach context to socket instance
+      socket.userId = user.id;
+      socket.role = user.role;
+      socket.user = user;
+      next();
     } catch (error) {
-      console.error(
-        'Socket authentication error:',
-        error.message
-      )
-
-      return next(
-        new Error(
-          'Invalid or expired token'
-        )
-      )
+      console.error("Socket authentication error:", error.message);
+      return next(new Error("Invalid or expired token"));
     }
-  })
+  });
 
-  // --------------------------------------------------
-  // Socket connection
-  // --------------------------------------------------
+  // Event Handlers
+  io.on("connection", (socket) => {
+    console.log(
+      `Socket connected: ${socket.id} (user: ${socket.userId}, role: ${socket.role})`,
+    );
 
-  io.on(
-    'connection',
-    (socket) => {
-      console.log(
-        `Socket connected: ${socket.id} ` +
-        `(user ${socket.userId}, role ${socket.role})`
-      )
+    // Booking Room Management
+    socket.on("booking:join", (bookingId) => {
+      if (bookingId) socket.join(`booking:${bookingId}`);
+    });
 
-      // ----------------------------------------------
-      // Booking room
-      // ----------------------------------------------
+    socket.on("booking:leave", (bookingId) => {
+      if (bookingId) socket.leave(`booking:${bookingId}`);
+    });
 
-      socket.on(
-        'booking:join',
-        (bookingId) => {
-          if (!bookingId) {
-            return
-          }
+    // Driver Location Broadcasting
+    socket.on("driver:location", ({ bookingId, lat, lng } = {}) => {
+      if (
+        socket.role !== "driver" ||
+        !bookingId ||
+        lat === undefined ||
+        lng === undefined
+      ) {
+        return;
+      }
 
-          socket.join(
-            `booking:${bookingId}`
-          )
+      socket.to(`booking:${bookingId}`).emit("driver:location", {
+        bookingId,
+        lat,
+        lng,
+        updatedAt: new Date(),
+      });
+    });
+
+    // Transit Route Room Management
+    socket.on("route:join", (routeId) => {
+      if (routeId) socket.join(`route:${routeId}`);
+    });
+
+    socket.on("route:leave", (routeId) => {
+      if (routeId) socket.leave(`route:${routeId}`);
+    });
+
+    // Vehicle Location Broadcasting
+    socket.on(
+      "vehicle:location",
+      ({ routeId, vehicleNumber, lat, lng } = {}) => {
+        if (
+          socket.role !== "driver" ||
+          !routeId ||
+          lat === undefined ||
+          lng === undefined
+        ) {
+          return;
         }
-      )
 
-      socket.on(
-        'booking:leave',
-        (bookingId) => {
-          if (!bookingId) {
-            return
-          }
-
-          socket.leave(
-            `booking:${bookingId}`
-          )
-        }
-      )
-
-      // ----------------------------------------------
-      // Driver live location
-      // ----------------------------------------------
-
-      socket.on(
-        'driver:location',
-        ({
-          bookingId,
-          lat,
-          lng,
-        } = {}) => {
-          if (
-            socket.role !== 'driver'
-          ) {
-            return
-          }
-
-          if (
-            !bookingId ||
-            lat === undefined ||
-            lng === undefined
-          ) {
-            return
-          }
-
-          socket
-            .to(
-              `booking:${bookingId}`
-            )
-            .emit(
-              'driver:location',
-              {
-                bookingId,
-                lat,
-                lng,
-                updatedAt:
-                  new Date(),
-              }
-            )
-        }
-      )
-
-      // ----------------------------------------------
-      // Transit route room
-      // ----------------------------------------------
-
-      socket.on(
-        'route:join',
-        (routeId) => {
-          if (!routeId) {
-            return
-          }
-
-          socket.join(
-            `route:${routeId}`
-          )
-        }
-      )
-
-      socket.on(
-        'route:leave',
-        (routeId) => {
-          if (!routeId) {
-            return
-          }
-
-          socket.leave(
-            `route:${routeId}`
-          )
-        }
-      )
-
-      // ----------------------------------------------
-      // Vehicle location
-      // ----------------------------------------------
-
-      socket.on(
-        'vehicle:location',
-        ({
+        socket.to(`route:${routeId}`).emit("vehicle:location", {
           routeId,
           vehicleNumber,
           lat,
           lng,
-        } = {}) => {
-          if (
-            socket.role !== 'driver'
-          ) {
-            return
-          }
+          updatedAt: new Date(),
+        });
+      },
+    );
 
-          if (
-            !routeId ||
-            lat === undefined ||
-            lng === undefined
-          ) {
-            return
-          }
+    socket.on("disconnect", (reason) => {
+      console.log(`Socket disconnected: ${socket.id} (${reason})`);
+    });
+  });
 
-          socket
-            .to(
-              `route:${routeId}`
-            )
-            .emit(
-              'vehicle:location',
-              {
-                routeId,
-                vehicleNumber,
-                lat,
-                lng,
-                updatedAt:
-                  new Date(),
-              }
-            )
-        }
-      )
+  return io;
+};
 
-      // ----------------------------------------------
-      // Disconnect
-      // ----------------------------------------------
-
-      socket.on(
-        'disconnect',
-        (reason) => {
-          console.log(
-            `Socket disconnected: ${socket.id} (${reason})`
-          )
-        }
-      )
-    }
-  )
-
-  return io
-}
-
-// --------------------------------------------------
-// Get Socket.IO instance
-// --------------------------------------------------
-
+/**
+ * Access active Socket.IO instance anywhere in the application
+ */
 const getIO = () => {
   if (!io) {
     throw new Error(
-      'Socket.io not initialized — call initSocket(server) first'
-    )
+      "Socket.io not initialized — call initSocket(server) first",
+    );
   }
-
-  return io
-}
+  return io;
+};
 
 module.exports = {
   initSocket,
   getIO,
-}
+};
