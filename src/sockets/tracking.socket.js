@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
 // Simple in-memory throttle map: socket.id -> last emit timestamp
 const lastEmitAt = new Map();
@@ -87,4 +87,4 @@ const initTrackingSocket = (io) => {
   });
 };
 
-module.exports = initTrackingSocket;
+export default initTrackingSocket;

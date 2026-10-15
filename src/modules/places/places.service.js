@@ -1,6 +1,7 @@
-const AppError = require("../../utils/AppError");
-const repo = require("./places.repository");
-const { placeModel, reviewModel } = require("./places.model");
+import AppError from "../../utils/AppError.js";
+import repo from "./places.repository.js";
+import place from "./places.model.js";
+const { placeModel, reviewModel } = place;
 
 const getNearbyPlaces = async ({ lat, lng, radius, category, search }) => {
   if (!lat || !lng)
@@ -63,7 +64,7 @@ const addReview = async ({ userId, placeId, rating, comment }) => {
   return reviewModel(review);
 };
 
-module.exports = {
+export default {
   getNearbyPlaces,
   getPlaceById,
   getAllPlaces,

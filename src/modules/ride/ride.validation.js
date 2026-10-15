@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 //
 // CREATE RIDE REQUEST
@@ -67,7 +67,7 @@ const completeRideSchema = Joi.object({
 // EXPORT
 //
 
-module.exports = {
+export default {
   createRideSchema,
   acceptRideSchema,
   arrivedRideSchema,

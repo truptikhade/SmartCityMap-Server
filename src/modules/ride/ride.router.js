@@ -1,21 +1,20 @@
-const express = require("express");
+import { Router } from "express";
+const router = Router();
 
-const router = express.Router();
+import controller from "./ride.controller.js";
 
-const controller = require("./ride.controller");
-
+import rideValidation from "./ride.validation.js";
 const {
   createRideSchema,
   acceptRideSchema,
   verifyOtpSchema,
   completeRideSchema,
-} = require("./ride.validation");
+} = rideValidation;
 
-const { protect, restrictTo } = require("../../middleware/auth.middleware");
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect, restrictTo } = authMidl;
 
-const validate = require("../../middleware/validate.middleware");
-
-//
+import validate from "../../middleware/validate.middleware.js";
 // AUTHENTICATION
 //
 
@@ -114,4 +113,4 @@ router.get(
   controller.getRide,
 );
 
-module.exports = router;
+export default router;

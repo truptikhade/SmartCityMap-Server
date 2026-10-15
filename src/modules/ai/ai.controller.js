@@ -1,6 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
-const aiService = require("./ai.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import aiService from "./ai.service.js";
 
 const getRecommendations = asyncHandler(async (req, res) => {
   const { lat, lng, message } = req.query;
@@ -29,7 +30,4 @@ const getSpecialties = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Place specialties fetched", data);
 });
 
-module.exports = {
-  getRecommendations,
-  getSpecialties,
-};
+export default { getRecommendations, getSpecialties };

@@ -1,6 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
-const transitService = require("./transit.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import transitService from "./transit.service.js";
 
 const getAllRoutes = asyncHandler(async (req, res) =>
   successResponse(
@@ -94,7 +95,7 @@ const getRouteLiveVehicles = asyncHandler(async (req, res) => {
     }),
   );
 });
-module.exports = {
+export default {
   getAllRoutes,
   getRouteById,
   getStops,

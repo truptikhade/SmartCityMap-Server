@@ -27,4 +27,4 @@ const reviewModel = (review) => ({
     : null,
 });
 
-module.exports = { placeModel, reviewModel };
+export default { placeModel, reviewModel };

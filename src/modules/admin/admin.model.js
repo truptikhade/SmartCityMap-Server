@@ -116,7 +116,4 @@ const vehicleChangeRequestModel = (request) => {
   };
 };
 
-module.exports = {
-  driverModel,
-  vehicleChangeRequestModel,
-};
+export default { driverModel, vehicleChangeRequestModel };

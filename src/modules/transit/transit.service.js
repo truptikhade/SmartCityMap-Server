@@ -1,12 +1,7 @@
-const AppError = require("../../utils/AppError");
-const repo = require("./transit.repository");
-
-const {
-  routeModel,
-  stopModel,
-  tripModel,
-  liveModel,
-} = require("./transit.model");
+import AppError from "../../utils/AppError.js";
+import repo from "./transit.repository.js";
+import tmodel from "./transit.model.js";
+const { routeModel, stopModel, tripModel, liveModel } = tmodel;
 
 /*
  * DISTANCE
@@ -739,7 +734,7 @@ const getRouteLiveVehicles = async ({ routeId, date }) => {
 
  */
 
-module.exports = {
+export default {
   getAllRoutes,
   getRouteById,
   getStopsByRoute,

@@ -1,10 +1,18 @@
-const crypto = require("crypto");
-const Razorpay = require("razorpay");
-const AppError = require("../../utils/AppError");
-const repo = require("./payment.repository");
-const bookingRepo = require("../booking/booking.repository");
-const { paymentModel } = require("./payment.model");
-const { emitPaymentSuccess } = require("./payment.events");
+import { createHmac } from "crypto";
+import Razorpay from "razorpay";
+import AppError from "../../utils/AppError.js";
+import paymentRepository from "./payment.repository.js";
+const { findByBookingId, createPayment, updatePaymentStatus } =
+  paymentRepository;
+
+import bookingRepository from "../booking/booking.repository.js";
+const { findBookingById, updateBookingStatus } = bookingRepository;
+
+import paymentModelModule from "./payment.model.js";
+const { paymentModel } = paymentModelModule;
+
+import paymentEvents from "./payment.events.js";
+const { emitPaymentSuccess } = paymentEvents;
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -14,14 +22,14 @@ const razorpay = new Razorpay({
 
 const initiatePayment = async ({ bookingId, userId }) => {
   // 1. Get booking
-  const booking = await bookingRepo.findBookingById(bookingId);
+  const booking = await findBookingById(bookingId);
   if (!booking) throw new AppError("Booking not found", 404);
   if (booking.userId !== userId) throw new AppError("Unauthorized", 403);
   if (booking.status !== "pending")
     throw new AppError("Booking is not in pending state", 400);
 
   // 2. Check if payment already exists
-  const existingPayment = await repo.findByBookingId(bookingId);
+  const existingPayment = await findByBookingId(bookingId);
   if (existingPayment && existingPayment.status === "success") {
     throw new AppError("Payment already completed", 400);
   }
@@ -39,7 +47,7 @@ const initiatePayment = async ({ bookingId, userId }) => {
   });
 
   // 4. Save payment record
-  await repo.createPayment({
+  await createPayment({
     bookingId,
     amount: booking.farePaid,
     method: "razorpay",
@@ -61,8 +69,10 @@ const verifyPayment = async (
 ) => {
   // 1. Verify signature
   const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+  const expectedSignature = createHmac(
+    "sha256",
+    process.env.RAZORPAY_KEY_SECRET,
+  )
     .update(body)
     .digest("hex");
 
@@ -71,10 +81,10 @@ const verifyPayment = async (
   }
 
   // 2. Update payment to success
-  const payment = await repo.updatePaymentStatus(razorpay_order_id, "success");
+  const payment = await updatePaymentStatus(razorpay_order_id, "success");
 
   // 3. Update booking to confirmed
-  await bookingRepo.updateBookingStatus(bookingId, "confirmed");
+  await updateBookingStatus(bookingId, "confirmed");
 
   // 4. Notify anyone watching this booking (rider + driver rooms)
   emitPaymentSuccess(io, bookingId, paymentModel(payment)); // ← single emit, io passed in
@@ -84,14 +94,14 @@ const verifyPayment = async (
 
 const refundPayment = async (bookingId, userId) => {
   // 1. Get booking
-  const booking = await bookingRepo.findBookingById(bookingId);
+  const booking = await findBookingById(bookingId);
   if (!booking) throw new AppError("Booking not found", 404);
   if (booking.userId !== userId) throw new AppError("Unauthorized", 403);
   if (booking.status !== "cancelled")
     throw new AppError("Only cancelled bookings can be refunded", 400);
 
   // 2. Get payment
-  const payment = await repo.findByBookingId(bookingId);
+  const payment = await findByBookingId(bookingId);
   if (!payment) throw new AppError("Payment not found", 404);
   if (payment.status !== "success")
     throw new AppError("Only successful payments can be refunded", 400);
@@ -103,26 +113,23 @@ const refundPayment = async (bookingId, userId) => {
   });
 
   // 4. Update payment status to refunded
-  const updated = await repo.updatePaymentStatus(
-    payment.transactionId,
-    "refunded",
-  );
+  const updated = await updatePaymentStatus(payment.transactionId, "refunded");
 
   return paymentModel(updated);
 };
 const getPaymentStatus = async (bookingId, userId) => {
   // Verify booking belongs to user
-  const booking = await bookingRepo.findBookingById(bookingId);
+  const booking = await findBookingById(bookingId);
   if (!booking) throw new AppError("Booking not found", 404);
   if (booking.userId !== userId) throw new AppError("Unauthorized", 403);
 
-  const payment = await repo.findByBookingId(bookingId);
+  const payment = await findByBookingId(bookingId);
   if (!payment) throw new AppError("Payment not found for this booking", 404);
 
   return paymentModel(payment);
 };
 
-module.exports = {
+export default {
   initiatePayment,
   verifyPayment,
   getPaymentStatus,

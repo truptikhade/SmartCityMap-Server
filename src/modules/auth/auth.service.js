@@ -1,40 +1,53 @@
-const bcrypt = require("bcryptjs");
-
-const jwt = require("jsonwebtoken");
-
-const crypto = require("crypto");
-
-const AppError = require("../../utils/AppError");
-
-const repo = require("./auth.repository");
-
-const { userModel } = require("./auth.model");
-
+import { hash, compare } from "bcryptjs";
+import jsont from "jsonwebtoken";
+const { sign } = jsont;
+import { randomBytes, createHash } from "crypto";
+import AppError from "../../utils/AppError.js";
+import authRepository from "./auth.repository.js";
 const {
-  sendPasswordResetEmail,
-  sendVerificationEmail,
-} = require("./email.service");
+  findUserByEmail,
+  findUserByPhone,
+  createUser,
+  saveEmailVerificationToken,
+  clearEmailVerificationToken,
+  findDriverByLicenseNumber,
+  findVehicleByNumber,
+  createDriver,
+  updateLastLogin,
+  findUserById,
+  updateUser,
+  findUserByVerificationToken,
+  markEmailVerified,
+  savePasswordResetToken,
+  clearPasswordResetToken,
+  findUserByResetToken,
+} = authRepository;
+
+import model from "./auth.model.js";
+const { userModel } = model;
+import emailverify from "./email.service.js";
+const { sendPasswordResetEmail, sendVerificationEmail } = emailverify; // assigning variable to object
 
 //
 // REGISTER NORMAL USER
 //
 
 const register = async ({ fname, lname, email, phone, password }) => {
-  const existingEmail = await repo.findUserByEmail(email);
+  const existingEmail = await findUserByEmail(email);
 
   if (existingEmail) {
     throw new AppError("Email already registered", 400);
   }
 
-  const existingPhone = await repo.findUserByPhone(phone);
+  const existingPhone = await findUserByPhone(phone);
 
   if (existingPhone) {
     throw new AppError("Phone already registered", 400);
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hash(password, 12);
 
-  const user = await repo.createUser({
+  const user = await createUser({
     fname,
     lname,
     email,
@@ -46,16 +59,15 @@ const register = async ({ fname, lname, email, phone, password }) => {
   // EMAIL VERIFICATION
   //
 
-  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const verificationToken = randomBytes(32).toString("hex");
 
-  const hashedVerificationToken = crypto
-    .createHash("sha256")
+  const hashedVerificationToken = createHash("sha256")
     .update(verificationToken)
     .digest("hex");
 
   const verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-  await repo.saveEmailVerificationToken({
+  await saveEmailVerificationToken({
     userId: user.id,
     emailVerificationToken: hashedVerificationToken,
     emailVerificationExpires: verificationExpires,
@@ -76,7 +88,7 @@ const register = async ({ fname, lname, email, phone, password }) => {
 
     verificationEmailSent = true;
   } catch (error) {
-    await repo.clearEmailVerificationToken(user.id);
+    await clearEmailVerificationToken(user.id);
 
     console.error("Verification email error:", error.message);
   }
@@ -107,33 +119,33 @@ const registerDriver = async ({
   model,
   color,
 }) => {
-  const existingEmail = await repo.findUserByEmail(email);
+  const existingEmail = await findUserByEmail(email);
 
   if (existingEmail) {
     throw new AppError("Email already registered", 400);
   }
 
-  const existingPhone = await repo.findUserByPhone(phone);
+  const existingPhone = await findUserByPhone(phone);
 
   if (existingPhone) {
     throw new AppError("Phone already registered", 400);
   }
 
-  const existingLicense = await repo.findDriverByLicenseNumber(licenseNumber);
+  const existingLicense = await findDriverByLicenseNumber(licenseNumber);
 
   if (existingLicense) {
     throw new AppError("License number already registered", 400);
   }
 
-  const existingVehicle = await repo.findVehicleByNumber(vehicleNumber);
+  const existingVehicle = await findVehicleByNumber(vehicleNumber);
 
   if (existingVehicle) {
     throw new AppError("Vehicle number already registered", 400);
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hash(password, 12);
 
-  const result = await repo.createDriver({
+  const result = await createDriver({
     fname,
     lname,
     email,
@@ -151,16 +163,15 @@ const registerDriver = async ({
   // EMAIL VERIFICATION
   //
 
-  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const verificationToken = randomBytes(32).toString("hex");
 
-  const hashedVerificationToken = crypto
-    .createHash("sha256")
+  const hashedVerificationToken = createHash("sha256")
     .update(verificationToken)
     .digest("hex");
 
   const verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-  await repo.saveEmailVerificationToken({
+  await saveEmailVerificationToken({
     userId: result.user.id,
     emailVerificationToken: hashedVerificationToken,
     emailVerificationExpires: verificationExpires,
@@ -181,7 +192,7 @@ const registerDriver = async ({
 
     verificationEmailSent = true;
   } catch (error) {
-    await repo.clearEmailVerificationToken(result.user.id);
+    await clearEmailVerificationToken(result.user.id);
 
     console.error("Verification email error:", error.message);
   }
@@ -218,13 +229,13 @@ const registerDriver = async ({
 //
 
 const login = async ({ email, password }) => {
-  const user = await repo.findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   if (!user) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  const isMatch = await compare(password, user.passwordHash);
 
   if (!isMatch) {
     throw new AppError("Invalid email or password", 401);
@@ -234,7 +245,7 @@ const login = async ({ email, password }) => {
     throw new AppError("Account is deactivated", 403);
   }
 
-  await repo.updateLastLogin(user.id);
+  await updateLastLogin(user.id);
 
   const token = generateToken(user.id);
 
@@ -249,7 +260,7 @@ const login = async ({ email, password }) => {
 //
 
 const getProfile = async (userId) => {
-  const user = await repo.findUserById(userId);
+  const user = await findUserById(userId);
 
   if (!user) {
     throw new AppError("User not found", 404);
@@ -268,7 +279,7 @@ const updateProfile = async (userId, updates) => {
   delete updates.role;
   delete updates.phone;
 
-  const user = await repo.updateUser(userId, updates);
+  const user = await updateUser(userId, updates);
 
   return userModel(user);
 };
@@ -278,21 +289,21 @@ const updateProfile = async (userId, updates) => {
 //
 
 const changePassword = async (userId, { currentPassword, newPassword }) => {
-  const user = await repo.findUserById(userId);
+  const user = await findUserById(userId);
 
   if (!user) {
     throw new AppError("User not found", 404);
   }
 
-  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  const isMatch = await compare(currentPassword, user.passwordHash);
 
   if (!isMatch) {
     throw new AppError("Current password is incorrect", 400);
   }
 
-  const passwordHash = await bcrypt.hash(newPassword, 12);
+  const passwordHash = await hash(newPassword, 12);
 
-  await repo.updateUser(userId, {
+  await updateUser(userId, {
     passwordHash,
   });
 
@@ -306,7 +317,7 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
 //
 
 const sendVerification = async (userId) => {
-  const user = await repo.findUserById(userId);
+  const user = await findUserById(userId);
 
   if (!user) {
     throw new AppError("User not found", 404);
@@ -319,16 +330,15 @@ const sendVerification = async (userId) => {
     };
   }
 
-  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const verificationToken = randomBytes(32).toString("hex");
 
-  const hashedVerificationToken = crypto
-    .createHash("sha256")
+  const hashedVerificationToken = createHash("sha256")
     .update(verificationToken)
     .digest("hex");
 
   const verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-  await repo.saveEmailVerificationToken({
+  await saveEmailVerificationToken({
     userId: user.id,
     emailVerificationToken: hashedVerificationToken,
     emailVerificationExpires: verificationExpires,
@@ -345,7 +355,7 @@ const sendVerification = async (userId) => {
       verificationUrl,
     });
   } catch (error) {
-    await repo.clearEmailVerificationToken(user.id);
+    await clearEmailVerificationToken(user.id);
 
     console.error("Verification email error:", error.message);
 
@@ -370,12 +380,11 @@ const verifyEmail = async (verificationToken) => {
     throw new AppError("Verification token is required", 400);
   }
 
-  const hashedToken = crypto
-    .createHash("sha256")
+  const hashedToken = createHash("sha256")
     .update(verificationToken)
     .digest("hex");
 
-  const user = await repo.findUserByVerificationToken(hashedToken);
+  const user = await findUserByVerificationToken(hashedToken);
 
   if (!user) {
     throw new AppError("Invalid or expired verification link", 400);
@@ -385,12 +394,12 @@ const verifyEmail = async (verificationToken) => {
     !user.emailVerificationExpires ||
     user.emailVerificationExpires < new Date()
   ) {
-    await repo.clearEmailVerificationToken(user.id);
+    await clearEmailVerificationToken(user.id);
 
     throw new AppError("Invalid or expired verification link", 400);
   }
 
-  await repo.markEmailVerified(user.id);
+  await markEmailVerified(user.id);
 
   return {
     message: "Email verified successfully",
@@ -402,7 +411,7 @@ const verifyEmail = async (verificationToken) => {
 //
 
 const forgotPassword = async (email) => {
-  const user = await repo.findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   /*
    * Do not reveal whether an email
@@ -423,12 +432,9 @@ const forgotPassword = async (email) => {
    * Only the SHA-256 hash is stored in DB.
    */
 
-  const rawToken = crypto.randomBytes(32).toString("hex");
+  const rawToken = randomBytes(32).toString("hex");
 
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(rawToken)
-    .digest("hex");
+  const hashedToken = createHash("sha256").update(rawToken).digest("hex");
 
   /*
    * Token expires after 15 minutes.
@@ -436,7 +442,7 @@ const forgotPassword = async (email) => {
 
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-  await repo.savePasswordResetToken({
+  await savePasswordResetToken({
     userId: user.id,
     resetPasswordToken: hashedToken,
     resetPasswordExpires: expiresAt,
@@ -457,7 +463,7 @@ const forgotPassword = async (email) => {
      * Remove token if email could not be sent.
      */
 
-    await repo.clearPasswordResetToken(user.id);
+    await clearPasswordResetToken(user.id);
 
     console.error("Password reset email error:", error.message);
 
@@ -482,27 +488,27 @@ const resetPassword = async ({ token, newPassword }) => {
     throw new AppError("Reset token is required", 400);
   }
 
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  const hashedToken = createHash("sha256").update(token).digest("hex");
 
-  const user = await repo.findUserByResetToken(hashedToken);
+  const user = await findUserByResetToken(hashedToken);
 
   if (!user) {
     throw new AppError("Invalid or expired reset link", 400);
   }
 
   if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
-    await repo.clearPasswordResetToken(user.id);
+    await clearPasswordResetToken(user.id);
 
     throw new AppError("Invalid or expired reset link", 400);
   }
 
-  const passwordHash = await bcrypt.hash(newPassword, 12);
+  const passwordHash = await hash(newPassword, 12);
 
-  await repo.updateUser(user.id, {
+  await updateUser(user.id, {
     passwordHash,
   });
 
-  await repo.clearPasswordResetToken(user.id);
+  await clearPasswordResetToken(user.id);
 
   return {
     message:
@@ -515,7 +521,7 @@ const resetPassword = async ({ token, newPassword }) => {
 //
 
 const generateToken = (userId) => {
-  return jwt.sign(
+  return sign(
     {
       id: userId,
     },
@@ -528,7 +534,7 @@ const generateToken = (userId) => {
 
 //
 
-module.exports = {
+export default {
   register,
   registerDriver,
   login,

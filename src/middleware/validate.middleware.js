@@ -1,4 +1,5 @@
-const { errorResponse } = require("../utils/response");
+import res from "../utils/response.js";
+const { errorResponse } = res;
 
 const validate = (schema) => {
   return (req, res, next) => {
@@ -13,4 +14,4 @@ const validate = (schema) => {
   };
 };
 
-module.exports = validate; // ← must be module.exports = validate, not module.exports = { validate }
+export default validate; // ← must be export validate, not export default { validate }

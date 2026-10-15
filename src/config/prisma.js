@@ -1,7 +1,7 @@
-const { PrismaPg } = require("@prisma/adapter-pg");
-const { PrismaClient } = require("@prisma/client");
-const { Pool } = require("pg");
-require("dotenv").config();
+import {PrismaPg} from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import "dotenv/config"
 
 // Create pg connection pool
 const pool = new Pool({
@@ -17,4 +17,4 @@ prisma
   .then(() => console.log("Prisma connected"))
   .catch((err) => console.error("Prisma error:", err));
 
-module.exports = prisma;
+export default prisma;

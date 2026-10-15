@@ -1,10 +1,10 @@
-const nodemailer = require("nodemailer");
+import { createTransport } from "nodemailer";
 
 //
 // MAIL TRANSPORTER
 //
 
-const transporter = nodemailer.createTransport({
+const transporter = createTransport({
   host: process.env.MAIL_HOST || "smtp.gmail.com",
   port: Number(process.env.MAIL_PORT) || 587,
   secure: Number(process.env.MAIL_PORT) === 465,
@@ -427,7 +427,7 @@ const sendPasswordResetEmail = async ({ email, fname, resetUrl }) => {
 
 //
 
-module.exports = {
+export default {
   sendVerificationEmail,
   sendPasswordResetEmail,
 };

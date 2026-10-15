@@ -1,6 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
-const bookingService = require("./booking.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import bookingService from "./booking.service.js";
 
 const create = asyncHandler(async (req, res) => {
   const booking = await bookingService.createBooking({
@@ -31,4 +32,4 @@ const cancel = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Booking cancelled successfully", booking);
 });
 
-module.exports = { create, getMyBookings, getById, cancel };
+export default { create, getMyBookings, getById, cancel };

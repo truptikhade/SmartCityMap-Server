@@ -1,4 +1,5 @@
-const { upsertLiveTracking } = require("../modules/transit/transit.repository");
+import transitRepository from "../modules/transit/transit.repository.js";
+const { upsertLiveTracking } = transitRepository;
 
 const activeTripSimulators = new Map();
 
@@ -100,4 +101,4 @@ const stopTripSimulator = (tripId) => {
 
 const getActiveSimulators = () => [...activeTripSimulators.keys()];
 
-module.exports = { startTripSimulator, stopTripSimulator, getActiveSimulators };
+export default { startTripSimulator, stopTripSimulator, getActiveSimulators };

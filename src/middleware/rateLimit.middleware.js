@@ -1,5 +1,5 @@
-const rateLimit = require("express-rate-limit");
-const redis = require("../config/redis");
+import rateLimit from "express-rate-limit";
+import redis from "../config/redis.js";
 
 // Rate limit store
 //
@@ -113,7 +113,7 @@ const bookingLimiter = rateLimit({
   },
 });
 
-module.exports = {
+export default {
   globalLimiter,
   authLimiter,
   registerLimiter,

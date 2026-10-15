@@ -1,7 +1,8 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
 
-const adminService = require("./admin.service");
+import adminService from "./admin.service.js";
 
 // DRIVERS
 
@@ -71,7 +72,7 @@ const rejectVehicleChangeRequest = asyncHandler(async (req, res) => {
   );
 });
 
-module.exports = {
+export default {
   getAllDrivers,
   getDriverById,
   approveDriver,

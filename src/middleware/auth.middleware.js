@@ -1,6 +1,7 @@
-const jwt = require("jsonwebtoken");
-const { errorResponse } = require("../utils/response");
-const prisma = require("../config/prisma");
+import jwt from "jsonwebtoken";
+import res from "../utils/response.js";
+const { errorResponse } = res;
+import prisma from "../config/prisma.js";
 
 const protect = async (req, res, next) => {
   try {
@@ -53,7 +54,7 @@ const restrictTo = (...roles) => {
   };
 };
 
-module.exports = {
+export default {
   protect,
   restrictTo,
 };

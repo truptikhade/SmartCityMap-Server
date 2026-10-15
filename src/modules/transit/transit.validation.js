@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 const createRouteSchema = Joi.object({
   name: Joi.string().min(2).required(),
@@ -56,7 +56,7 @@ const fareEstimateSchema = Joi.object({
   distanceKm: Joi.number().positive().required(),
 });
 
-module.exports = {
+export default {
   createRouteSchema,
   addStopSchema,
   nearbyStopsSchema,

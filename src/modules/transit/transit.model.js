@@ -59,4 +59,4 @@ const liveModel = (live) => ({
   trip: live.trip ? tripModel(live.trip) : null,
   route: live.trip?.route ? routeModel(live.trip.route) : null,
 });
-module.exports = { routeModel, stopModel, tripModel, liveModel };
+export default { routeModel, stopModel, tripModel, liveModel };

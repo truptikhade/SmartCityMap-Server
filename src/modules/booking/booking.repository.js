@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 const createBooking = async ({
   userId,
@@ -96,7 +96,7 @@ const isSeatTaken = async ({ tripId, seatNumber, travelDate }) => {
   return !!booking;
 };
 
-module.exports = {
+export default {
   createBooking,
   findMyBookings,
   findBookingById,

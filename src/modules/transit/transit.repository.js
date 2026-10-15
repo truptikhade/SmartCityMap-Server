@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 const findAllRoutes = async (transitType) => {
   const where = { isActive: true };
@@ -218,7 +218,7 @@ const findRouteWithActiveTrips = async ({ routeId, date }) => {
   });
 };
 
-module.exports = {
+export default {
   findAllRoutes,
   findAllRoutesWithStops,
   findRouteById,

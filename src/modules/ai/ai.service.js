@@ -1,6 +1,6 @@
-const { GoogleGenAI } = require("@google/genai");
+import { GoogleGenAI } from "@google/genai";
 
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -564,7 +564,4 @@ Rules:
 
 */
 
-module.exports = {
-  getNearbyRecommendations,
-  getPlaceSpecialties,
-};
+export default { getNearbyRecommendations, getPlaceSpecialties };

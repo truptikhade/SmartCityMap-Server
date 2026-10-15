@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 const createPayment = async ({ bookingId, amount, method, transactionId }) => {
   return prisma.payment.create({
@@ -35,7 +35,7 @@ const updatePaymentStatus = async (transactionId, status) => {
   });
 };
 
-module.exports = {
+export default {
   createPayment,
   findByBookingId,
   findByTransactionId,

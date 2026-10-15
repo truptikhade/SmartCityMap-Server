@@ -1,8 +1,13 @@
-const { Server } = require("socket.io");
-const { createAdapter } = require("@socket.io/redis-adapter");
-const jwt = require("jsonwebtoken");
-const prisma = require("../config/prisma");
-const redis = require("./redis");
+import { Server } from "socket.io";
+
+import redisAdapter from "@socket.io/redis-adapter";
+const { createAdapter } = redisAdapter;
+
+import jwt from "jsonwebtoken";
+
+import prisma from "../config/prisma.js";
+
+import redis from "./redis.js";
 
 let io = null;
 
@@ -153,7 +158,7 @@ const getIO = () => {
   return io;
 };
 
-module.exports = {
+export default {
   initSocket,
   getIO,
 };

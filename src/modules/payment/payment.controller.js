@@ -1,6 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
-const paymentService = require("./payment.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import paymentService from "./payment.service.js";
 
 const initiate = asyncHandler(async (req, res) => {
   const data = await paymentService.initiatePayment({
@@ -31,4 +32,4 @@ const refund = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Refund initiated successfully", data);
 });
 
-module.exports = { initiate, verify, getStatus, refund };
+export default { initiate, verify, getStatus, refund };

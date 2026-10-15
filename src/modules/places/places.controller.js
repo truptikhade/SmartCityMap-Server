@@ -1,6 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
-const placesService = require("./places.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import placesService from "./places.service.js";
 
 const getNearby = asyncHandler(async (req, res) => {
   const { lat, lng, radius, category, search } = req.query;
@@ -50,4 +51,4 @@ const addReview = asyncHandler(async (req, res) => {
   return successResponse(res, 201, "Review added", review);
 });
 
-module.exports = { getNearby, getAll, getById, create, getReviews, addReview };
+export default { getNearby, getAll, getById, create, getReviews, addReview };

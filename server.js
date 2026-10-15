@@ -4,46 +4,43 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import "dotenv/config";
 
-require("dotenv").config();
+// Prisma
+import prisma from "./src/config/prisma.js";
 
-//  Import Prisma
-import "./src/config/prisma";
+// Routes
+import authRoutes from "./src/modules/auth/auth.router.js";
+import placesRoutes from "./src/modules/places/places.router.js";
+import transitRoutes from "./src/modules/transit/transit.router.js";
+import bookingRoutes from "./src/modules/booking/booking.router.js";
+import paymentRoutes from "./src/modules/payment/payment.router.js";
+import aiRoutes from "./src/modules/ai/ai.router.js";
+import driverRoutes from "./src/modules/driver/driver.router.js";
+import adminRoutes from "./src/modules/admin/admin.router.js";
+import rideRoutes from "./src/modules/ride/ride.router.js";
 
-//  Import Routes
-import authRoutes from "./src/modules/auth/auth.router";
-import placesRoutes from "./src/modules/places/places.router";
-import transitRoutes from "./src/modules/transit/transit.router";
-import bookingRoutes from "./src/modules/booking/booking.router";
-import paymentRoutes from "./src/modules/payment/payment.router";
-import aiRoutes from "./src/modules/ai/ai.router";
-import driverRoutes from "./src/modules/driver/driver.router";
-import adminRoutes from "./src/modules/admin/admin.router";
-import rideRoutes from "./src/modules/ride/ride.router";
+// Middleware
+import errorHandler from "./src/middleware/error.middleware.js";
+import rateLimitMidl from "./src/middleware/rateLimit.middleware.js";
+const { globalLimiter, apiLimiter } = rateLimitMidl;
 
-//  Import Middleware
-import errorHandler from "./src/middleware/error.middleware";
-
-//  Import Socket
-import { initSocket } from "./src/config/socket";
-import initTrackingSocket from "./src/sockets/tracking.socket";
-import { initRideSocket } from "./src/sockets/ride.socket";
-
-//  Rate Limiting
-import {
-  globalLimiter,
-  apiLimiter,
-} from "./src/middleware/rateLimit.middleware";
-
-//  Create App & Server
+// Socket configuration
+import socketConfig from "./src/config/socket.js";
+const { initSocket } = socketConfig;
+import initTrackingSocket from "./src/sockets/tracking.socket.js";
+import rideSocket from "./src/sockets/ride.socket.js";
+const { initRideSocket } = rideSocket;
+// Transit simulator dependencies
+import tripSimulator from "./src/sockets/trip.simulator.js";
+const { startTripSimulator } = tripSimulator;
+// Create app and server
 const app = express();
-
 app.set("trust proxy", 1);
 
 const server = createServer(app);
 
-//  CORS Configuration
-
+// CORS configuration
 const allowedOrigins = [
   process.env.CLIENT_URL,
   "https://smart-city-map-client-six.vercel.app",
@@ -51,12 +48,11 @@ const allowedOrigins = [
 
 const isAllowedOrigin = (origin) => {
   // Allow requests without an Origin header
-  // Example: server-to-server requests, health checks, etc.
   if (!origin) {
     return true;
   }
 
-  // Allow explicitly configured origins
+  // Allow configured origins
   if (allowedOrigins.includes(origin)) {
     return true;
   }
@@ -78,19 +74,14 @@ const corsOptions = {
     }
 
     console.log("CORS blocked origin:", origin);
-
     return callback(new Error(`Origin ${origin} is not allowed by CORS`));
   },
-
   credentials: true,
-
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
-//  Socket.io Setup
-
+// Socket.IO setup
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -99,40 +90,29 @@ const io = new Server(server, {
       }
 
       console.log("Socket.IO CORS blocked origin:", origin);
-
       return callback(new Error(`Origin ${origin} is not allowed`));
     },
-
     methods: ["GET", "POST"],
-
     credentials: true,
   },
 });
 
-// Attach io to app so controllers can access it if needed
+// Make Socket.IO available to controllers
 app.set("io", io);
-global.io = io;
+globalThis.io = io;
 
-//  Initialize Sockets
-
+// Initialize sockets
 await initSocket(io);
 initTrackingSocket(io);
 initRideSocket(io);
 
-//  Auto-start Transit Simulators
-
+// Automatically start today's transit simulators
 const autoStartSimulators = async (io) => {
   try {
-    const repo = require("./src/modules/transit/transit.repository");
-    const prisma = require("./src/config/prisma");
-    const { startTripSimulator } = require("./src/sockets/trip.simulator");
-
     const today = new Date();
-
     today.setUTCHours(0, 0, 0, 0);
 
     const endOfDay = new Date();
-
     endOfDay.setUTCHours(23, 59, 59, 999);
 
     const trips = await prisma.trip.findMany({
@@ -141,7 +121,6 @@ const autoStartSimulators = async (io) => {
           gte: today,
           lte: endOfDay,
         },
-
         status: {
           in: ["scheduled", "running"],
         },
@@ -149,7 +128,7 @@ const autoStartSimulators = async (io) => {
     });
 
     for (const trip of trips) {
-      const stops = await repo.findStopsByRoute(trip.routeId);
+      const stops = await transitRepository.findStopsByRoute(trip.routeId);
 
       startTripSimulator(io, {
         tripId: trip.id,
@@ -165,14 +144,10 @@ const autoStartSimulators = async (io) => {
   }
 };
 
-//  Global Middleware
-
+// Global middleware
 app.use(helmet());
-
 app.use(cors(corsOptions));
-
 app.use(morgan("dev"));
-
 app.use(json());
 
 app.use(
@@ -181,14 +156,11 @@ app.use(
   }),
 );
 
-//  Rate Limiting
-
+// Rate limiting
 app.use(globalLimiter);
-
 app.use("/api", apiLimiter);
 
-//  Health Check
-
+// Health check
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -196,34 +168,22 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     database: "smartcitymap_db",
-
     schemas: ["auth", "geo", "transit", "booking", "public"],
   });
 });
 
-//  API Routes
-
+// API routes
 app.use("/api/auth", authRoutes);
-
 app.use("/api/places", placesRoutes);
-
 app.use("/api/transit", transitRoutes);
-
 app.use("/api/booking", bookingRoutes);
-
 app.use("/api/payment", paymentRoutes);
-
 app.use("/api/ai", aiRoutes);
-
 app.use("/api/admin", adminRoutes);
-
-// Driver routes
 app.use("/api/driver", driverRoutes);
-
 app.use("/api/rides", rideRoutes);
 
-//  404 Handler
-
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -231,64 +191,46 @@ app.use((req, res) => {
   });
 });
 
-//  Global Error Handler
-
+// Global error handler
 app.use(errorHandler);
 
-//  Start Server
-
+// Start server
 const PORT = process.env.PORT || 9000;
 
 server.listen(PORT, async () => {
   console.log("");
-
-  console.log(" ");
-
   console.log(`SmartCity API running on port ${PORT}`);
-
   console.log(`http://localhost:${PORT}`);
-
   console.log(`http://localhost:${PORT}/health`);
-
-  console.log(" ");
-
   console.log("");
 
-  // Auto-start simulators for today's trips
   await autoStartSimulators(io);
 });
 
-//  Graceful Shutdown
+// Graceful shutdown
+let isShuttingDown = false;
 
-import { $disconnect } from "./src/config/prisma";
+const shutdown = async (signal) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
 
-process.on("SIGINT", async () => {
-  console.log("\nShutting down gracefully...");
+  console.log(`\n${signal} received. Shutting down gracefully...`);
 
-  await $disconnect();
-
-  server.close(() => {
-    console.log("Server closed");
-
-    process.exit(0);
+  server.close(async () => {
+    try {
+      await prisma.$disconnect();
+      console.log("Server closed and Prisma disconnected");
+      process.exit(0);
+    } catch (err) {
+      console.error("Shutdown error:", err);
+      process.exit(1);
+    }
   });
-});
-
-process.on("SIGTERM", async () => {
-  console.log("\nSIGTERM received...");
-
-  await $disconnect();
-
-  server.close(() => {
-    console.log("Server closed");
-
-    process.exit(0);
-  });
-});
-
-//  Export
-
-export default {
-  app,
-  io,
 };
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+// Export app and Socket.IO
+export { app, io };
+export default app;

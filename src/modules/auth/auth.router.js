@@ -1,18 +1,27 @@
-const express = require("express");
-
-const router = express.Router();
-
-const controller = require("./auth.controller");
-
-const { protect } = require("../../middleware/auth.middleware");
-
-const validate = require("../../middleware/validate.middleware");
-
+import { Router } from "express";
+const router = Router();
+import cont from "./auth.controller.js";
 const {
-  authLimiter,
-  registerLimiter,
-} = require("../../middleware/rateLimit.middleware");
+  register,
+  registerDriver,
+  login,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  getProfile,
+  updateProfile,
+  changePassword,
+  sendVerification,
+} = cont;
 
+import auth from "../../middleware/auth.middleware.js";
+const { protect } = auth;
+
+import validate from "../../middleware/validate.middleware.js";
+
+import rate from "../../middleware/rateLimit.middleware.js";
+const { authLimiter, registerLimiter } = rate;
+import vall from "./auth.validation.js";
 const {
   registerSchema,
   driverRegisterSchema,
@@ -20,34 +29,29 @@ const {
   changePasswordSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
-} = require("./auth.validation");
+} = vall;
 
 //
 // PUBLIC ROUTES
 //
 
-router.post(
-  "/register",
-  registerLimiter,
-  validate(registerSchema),
-  controller.register,
-);
+router.post("/register", registerLimiter, validate(registerSchema), register);
 
 router.post(
   "/register/driver",
   registerLimiter,
   validate(driverRegisterSchema),
-  controller.registerDriver,
+  registerDriver,
 );
 
-router.post("/login", authLimiter, validate(loginSchema), controller.login);
+router.post("/login", authLimiter, validate(loginSchema), login);
 
 // Forgot password
 router.post(
   "/forgot-password",
   authLimiter,
   validate(forgotPasswordSchema),
-  controller.forgotPassword,
+  forgotPassword,
 );
 
 // Reset password
@@ -55,34 +59,29 @@ router.post(
   "/reset-password",
   authLimiter,
   validate(resetPasswordSchema),
-  controller.resetPassword,
+  resetPassword,
 );
 
 // Email verification
 // User clicks the verification link from email.
-router.get("/verify-email", controller.verifyEmail);
+router.get("/verify-email", verifyEmail);
 
 //
 // PROTECTED ROUTES
 //
 
-router.get("/profile", protect, controller.getProfile);
+router.get("/profile", protect, getProfile);
 
-router.put("/profile", protect, controller.updateProfile);
+router.put("/profile", protect, updateProfile);
 
 router.put(
   "/change-password",
   protect,
   validate(changePasswordSchema),
-  controller.changePassword,
+  changePassword,
 );
 
 // Send / resend verification email
-router.post(
-  "/send-verification",
-  authLimiter,
-  protect,
-  controller.sendVerification,
-);
+router.post("/send-verification", authLimiter, protect, sendVerification);
 
-module.exports = router;
+export default router;

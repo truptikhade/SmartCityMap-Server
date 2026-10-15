@@ -1,8 +1,10 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
+
+const { user: _user, driverProfile, rideRequest, $transaction } = prisma;
 
 // FIND AVAILABLE DRIVERS FOR VEHICLE TYPE
 const findPassengerById = async (passengerId) => {
-  return prisma.user.findFirst({
+  return _user.findFirst({
     where: {
       id: passengerId,
       role: "user",
@@ -15,7 +17,7 @@ const findPassengerById = async (passengerId) => {
 };
 
 const findAvailableDrivers = async ({ vehicleType }) => {
-  return prisma.driverProfile.findMany({
+  return driverProfile.findMany({
     where: {
       isApproved: true,
       isAvailable: true,
@@ -70,7 +72,7 @@ const findAvailableDrivers = async ({ vehicleType }) => {
 // FIND AVAILABLE DRIVER + VEHICLE
 
 const findAvailableDriverVehicle = async ({ driverId, vehicleId }) => {
-  return prisma.driverProfile.findFirst({
+  return driverProfile.findFirst({
     where: {
       isApproved: true,
       isAvailable: true,
@@ -122,7 +124,7 @@ const findAvailableDriverVehicle = async ({ driverId, vehicleId }) => {
 // FIND DRIVER BY USER ID
 
 const findDriverByUserId = async (driverId) => {
-  return prisma.driverProfile.findUnique({
+  return driverProfile.findUnique({
     where: {
       userId: driverId,
     },
@@ -177,7 +179,7 @@ const createRideRequest = async ({
   vehicleType,
   otpHash,
 }) => {
-  return prisma.rideRequest.create({
+  return rideRequest.create({
     data: {
       passengerId,
 
@@ -212,7 +214,7 @@ const createRideRequest = async ({
 // FIND RIDE BY ID
 
 const findRideById = async (rideId) => {
-  return prisma.rideRequest.findUnique({
+  return rideRequest.findUnique({
     where: {
       id: rideId,
     },
@@ -256,7 +258,7 @@ const findRideById = async (rideId) => {
 // FIND PASSENGER RIDES
 
 const findPassengerRides = async (passengerId) => {
-  return prisma.rideRequest.findMany({
+  return rideRequest.findMany({
     where: {
       passengerId,
     },
@@ -293,7 +295,7 @@ const findPassengerRides = async (passengerId) => {
 // FIND DRIVER RIDES
 
 const findDriverRides = async (driverId) => {
-  return prisma.rideRequest.findMany({
+  return rideRequest.findMany({
     where: {
       driverId,
     },
@@ -330,7 +332,7 @@ const findDriverRides = async (driverId) => {
 // FIND REQUESTED RIDES FOR VEHICLE TYPE
 
 const findRequestedRides = async ({ vehicleType }) => {
-  return prisma.rideRequest.findMany({
+  return rideRequest.findMany({
     where: {
       status: "REQUESTED",
       vehicleType,
@@ -357,7 +359,7 @@ const findRequestedRides = async ({ vehicleType }) => {
 // ASSIGN DRIVER
 
 const assignDriver = async ({ rideId, driverId, vehicleId }) => {
-  return prisma.$transaction(async (tx) => {
+  return $transaction(async (tx) => {
     const ride = await tx.rideRequest.findUnique({
       where: {
         id: rideId,
@@ -459,7 +461,7 @@ const assignDriver = async ({ rideId, driverId, vehicleId }) => {
 // UPDATE RIDE STATUS
 
 const updateRideStatus = async ({ rideId, status, data = {} }) => {
-  return prisma.rideRequest.update({
+  return rideRequest.update({
     where: {
       id: rideId,
     },
@@ -507,7 +509,7 @@ const updateRideStatus = async ({ rideId, status, data = {} }) => {
 // COMPLETE RIDE
 
 const completeRide = async ({ rideId, finalFare }) => {
-  return prisma.rideRequest.update({
+  return rideRequest.update({
     where: {
       id: rideId,
     },
@@ -554,7 +556,7 @@ const completeRide = async ({ rideId, finalFare }) => {
 // CANCEL RIDE
 
 const cancelRide = async ({ rideId }) => {
-  return prisma.rideRequest.update({
+  return rideRequest.update({
     where: {
       id: rideId,
     },
@@ -566,7 +568,7 @@ const cancelRide = async ({ rideId }) => {
   });
 };
 
-module.exports = {
+export default {
   findPassengerById,
   findAvailableDrivers,
   findAvailableDriverVehicle,

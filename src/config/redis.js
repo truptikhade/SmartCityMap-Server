@@ -1,5 +1,5 @@
-const redis = require("redis");
-require("dotenv").config();
+import redis from "redis";
+import "dotenv/config"
 
 // Redis client with key expiration / keep-alive management
 //
@@ -145,7 +145,7 @@ const setIfNotExists = async (key, value, ttlSeconds = DEFAULT_TTL_SECONDS) => {
 
 // Export
 
-module.exports = {
+const redisSerivce= {
   // High-level helpers
   set,
   get,
@@ -166,3 +166,5 @@ module.exports = {
   init: initializeClient,
   isAvailable: () => !!client,
 };
+
+export default redisSerivce;

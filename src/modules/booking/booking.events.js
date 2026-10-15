@@ -1,4 +1,5 @@
-const { getIO } = require("../../config/socket");
+import socketConfig from "../../config/socket.js";
+const { getIO } = socketConfig;
 
 const emitBookingCancelled = (bookingId, data) => {
   try {
@@ -27,4 +28,4 @@ const emitBookingConfirmed = (bookingId, data) => {
   }
 };
 
-module.exports = { emitBookingCancelled, emitBookingConfirmed };
+export default { emitBookingCancelled, emitBookingConfirmed };

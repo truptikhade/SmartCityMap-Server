@@ -14,4 +14,4 @@ const emitPaymentFailed = (io, bookingId, reason) => {
   });
 };
 
-module.exports = { emitPaymentSuccess, emitPaymentFailed };
+export default { emitPaymentSuccess, emitPaymentFailed };

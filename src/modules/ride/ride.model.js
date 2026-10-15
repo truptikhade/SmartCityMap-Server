@@ -74,7 +74,4 @@ const rideListModel = (rides = []) => {
   return rides.map((ride) => rideModel(ride));
 };
 
-module.exports = {
-  rideModel,
-  rideListModel,
-};
+export default { rideModel, rideListModel };

@@ -1,8 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-
-const { successResponse } = require("../../utils/response");
-
-const authService = require("./auth.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import authService from "./auth.service.js";
 
 //
 // REGISTER
@@ -111,7 +110,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
 
 //
 
-module.exports = {
+export default {
   register,
   registerDriver,
   login,

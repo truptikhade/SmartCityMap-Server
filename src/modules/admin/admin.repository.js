@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 // FIND ALL DRIVERS
 
@@ -366,12 +366,11 @@ const rejectVehicleChangeRequest = async (requestId) => {
   });
 };
 
-module.exports = {
+export default {
   findAllDrivers,
   findDriverById,
   approveDriver,
   rejectDriver,
-
   findPendingVehicleChangeRequests,
   findVehicleChangeRequestById,
   approveVehicleChangeRequest,

@@ -1,9 +1,11 @@
-const express = require("express");
-const router = express.Router();
-const controller = require("./places.controller");
-const { protect, restrictTo } = require("../../middleware/auth.middleware");
-const validate = require("../../middleware/validate.middleware");
-const { createPlaceSchema, reviewSchema } = require("./places.validation");
+import { Router } from "express";
+const router = Router();
+import controller from "./places.controller.js";
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect, restrictTo } = authMidl;
+import validate from "../../middleware/validate.middleware.js";
+import placeVal from "./places.validation.js";
+const { createPlaceSchema, reviewSchema } = placeVal;
 
 // Public routes
 router.get("/nearby", controller.getNearby);
@@ -11,6 +13,7 @@ router.get("/", controller.getAll);
 router.get("/:id", controller.getById);
 
 // Reviews — need login
+
 router.get("/:id/reviews", controller.getReviews);
 router.post(
   "/:id/reviews",
@@ -28,4 +31,4 @@ router.post(
   controller.create,
 );
 
-module.exports = router;
+export default router;

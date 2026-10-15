@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 const initiateSchema = Joi.object({
   bookingId: Joi.string().uuid().required(),
@@ -11,4 +11,4 @@ const verifySchema = Joi.object({
   bookingId: Joi.string().uuid().required(),
 });
 
-module.exports = { initiateSchema, verifySchema };
+export default { initiateSchema, verifySchema };

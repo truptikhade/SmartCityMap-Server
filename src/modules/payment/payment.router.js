@@ -1,9 +1,15 @@
-const express = require("express");
-const router = express.Router();
-const controller = require("./payment.controller");
-const { protect } = require("../../middleware/auth.middleware");
-const validate = require("../../middleware/validate.middleware");
-const { initiateSchema, verifySchema } = require("./payment.validation");
+import { Router } from "express";
+const router = Router();
+
+import controller from "./payment.controller.js";
+
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect } = authMidl;
+
+import validate from "../../middleware/validate.middleware.js";
+
+import paymentValidation from "./payment.validation.js";
+const { initiateSchema, verifySchema } = paymentValidation;
 
 // All payment routes require login
 router.use(protect);
@@ -15,4 +21,4 @@ router.post("/verify", validate(verifySchema), controller.verify);
 router.get("/:bookingId", controller.getStatus);
 router.post("/:bookingId/refund", controller.refund);
 
-module.exports = router;
+export default router;

@@ -1,8 +1,11 @@
-const AppError = require("../../utils/AppError");
-const repo = require("./driver.repository");
-const { driverModel, vehicleChangeRequestModel } = require("./driver.model");
-const { rideModel, rideListModel } = require("../ride/ride.model");
+import AppError from "../../utils/AppError.js";
+import repo from "./driver.repository.js";
 
+import driverModelModule from "./driver.model.js";
+const { driverModel, vehicleChangeRequestModel } = driverModelModule;
+
+import rideModelModule from "../ride/ride.model.js";
+const { rideModel, rideListModel } = rideModelModule;
 // GET DRIVER DASHBOARD
 const getDashboard = async (userId) => {
   const driver = await repo.findDriverByUserId(userId);
@@ -245,7 +248,7 @@ const getVehicleChangeRequests = async (userId) => {
   return requests.map(vehicleChangeRequestModel);
 };
 
-module.exports = {
+export default {
   getDashboard,
   getPendingRequests,
   getProfile,

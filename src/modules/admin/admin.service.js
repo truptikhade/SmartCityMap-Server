@@ -1,5 +1,7 @@
-const adminRepository = require("./admin.repository");
-const { driverModel } = require("./admin.model");
+import adminRepository from "./admin.repository.js";
+
+import adminModelModule from "./admin.model.js";
+const { driverModel } = adminModelModule;
 
 // GET ALL DRIVERS
 
@@ -105,12 +107,11 @@ const rejectVehicleChangeRequest = async (requestId) => {
   return adminRepository.rejectVehicleChangeRequest(requestId);
 };
 
-module.exports = {
+export default {
   getAllDrivers,
   getDriverById,
   approveDriver,
   rejectDriver,
-
   getPendingVehicleChangeRequests,
   approveVehicleChangeRequest,
   rejectVehicleChangeRequest,

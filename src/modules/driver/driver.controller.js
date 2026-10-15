@@ -1,7 +1,7 @@
-const asyncHandler = require("../../utils/asyncHandler");
-const { successResponse } = require("../../utils/response");
-
-const driverService = require("./driver.service");
+import asyncHandler from "../../utils/asyncHandler.js";
+import res from "../../utils/response.js";
+const { successResponse } = res;
+import driverService from "./driver.service.js";
 
 // GET DASHBOARD
 
@@ -99,7 +99,7 @@ const updateAvailability = asyncHandler(async (req, res) => {
   );
 });
 
-module.exports = {
+export default {
   getDashboard,
   getProfile,
   updateProfile,

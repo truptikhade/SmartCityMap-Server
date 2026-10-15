@@ -1,13 +1,14 @@
-const crypto = require("crypto");
+import crypto from "node:crypto";
 
-const rideRepository = require("./ride.repository");
-const { rideModel, rideListModel } = require("./ride.model");
-const AppError = require("../../utils/AppError");
+import rideRepository from "./ride.repository.js";
 
-const {
-  emitNewRideRequest,
-  emitRideUpdate,
-} = require("../../sockets/ride.socket");
+import rideModelModule from "./ride.model.js";
+const { rideModel, rideListModel } = rideModelModule;
+
+import AppError from "../../utils/AppError.js";
+
+import rideSocket from "../../sockets/ride.socket.js";
+const { emitNewRideRequest, emitRideUpdate } = rideSocket;
 
 // Helpers
 
@@ -523,7 +524,7 @@ const cancelRide = async ({ rideId, userId }) => {
 
 // Exports
 
-module.exports = {
+export default {
   createRide,
   getRide,
   getPassengerRides,

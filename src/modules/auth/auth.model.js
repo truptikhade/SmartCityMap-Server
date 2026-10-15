@@ -14,4 +14,4 @@ const userModel = (user) => ({
   createdAt: user.createdAt,
 });
 
-module.exports = { userModel };
+export default { userModel };

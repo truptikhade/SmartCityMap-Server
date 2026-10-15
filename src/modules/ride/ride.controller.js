@@ -1,8 +1,9 @@
-const asyncHandler = require("../../utils/asyncHandler");
+import asyncHandler from "../../utils/asyncHandler.js";
 
-const { successResponse } = require("../../utils/response");
+import res from "../../utils/response.js";
+const { successResponse } = res;
 
-const rideService = require("./ride.service");
+import rideService from "./ride.service.js";
 
 //
 // CREATE RIDE
@@ -211,7 +212,7 @@ const findMatchingDrivers = asyncHandler(async (req, res) => {
 // EXPORT
 //
 
-module.exports = {
+export default {
   createRide,
   getRide,
   getPassengerRides,

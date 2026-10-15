@@ -22,4 +22,4 @@ const errorResponse = (
   });
 };
 
-module.exports = { successResponse, errorResponse };
+export default { successResponse, errorResponse };

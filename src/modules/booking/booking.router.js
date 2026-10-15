@@ -1,10 +1,15 @@
-const express = require("express");
-const router = express.Router();
-const controller = require("./booking.controller");
-const { protect } = require("../../middleware/auth.middleware");
-const validate = require("../../middleware/validate.middleware");
-const { bookingLimiter } = require("../../middleware/rateLimit.middleware");
-const { createBookingSchema } = require("./booking.validation");
+import { Router } from "express";
+const router = Router();
+
+import controller from "./booking.controller.js";
+
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect } = authMidl;
+import validate from "../../middleware/validate.middleware.js";
+import rateLimitMidl from "../../middleware/rateLimit.middleware.js";
+const { bookingLimiter } = rateLimitMidl;
+import bookingValidation from "./booking.validation.js";
+const { createBookingSchema } = bookingValidation;
 
 // All booking routes require login
 router.use(protect);
@@ -20,4 +25,4 @@ router.get("/my", controller.getMyBookings);
 router.get("/:id", controller.getById);
 router.put("/:id/cancel", controller.cancel);
 
-module.exports = router;
+export default router;

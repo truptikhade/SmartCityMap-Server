@@ -1,11 +1,18 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
+
+const {
+  user: _user,
+  driverProfile: _driverProfile,
+  vehicle: _vehicle,
+  $transaction,
+} = prisma;
 
 //
 // USER QUERIES
 //
 
 const findUserByEmail = async (email) => {
-  return prisma.user.findUnique({
+  return _user.findUnique({
     where: {
       email,
     },
@@ -13,7 +20,7 @@ const findUserByEmail = async (email) => {
 };
 
 const findUserByPhone = async (phone) => {
-  return prisma.user.findUnique({
+  return _user.findUnique({
     where: {
       phone,
     },
@@ -21,7 +28,7 @@ const findUserByPhone = async (phone) => {
 };
 
 const findUserById = async (id) => {
-  return prisma.user.findUnique({
+  return _user.findUnique({
     where: {
       id,
     },
@@ -33,7 +40,7 @@ const findUserById = async (id) => {
 //
 
 const createUser = async ({ fname, lname, email, phone, passwordHash }) => {
-  return prisma.user.create({
+  return _user.create({
     data: {
       fname,
       lname,
@@ -49,7 +56,7 @@ const createUser = async ({ fname, lname, email, phone, passwordHash }) => {
 //
 
 const findDriverByLicenseNumber = async (licenseNumber) => {
-  return prisma.driverProfile.findUnique({
+  return _driverProfile.findUnique({
     where: {
       licenseNumber,
     },
@@ -57,7 +64,7 @@ const findDriverByLicenseNumber = async (licenseNumber) => {
 };
 
 const findVehicleByNumber = async (vehicleNumber) => {
-  return prisma.vehicle.findUnique({
+  return _vehicle.findUnique({
     where: {
       vehicleNumber,
     },
@@ -77,7 +84,7 @@ const createDriver = async ({
   model,
   color,
 }) => {
-  return prisma.$transaction(async (tx) => {
+  return $transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         fname,
@@ -123,7 +130,7 @@ const createDriver = async ({
 //
 
 const updateUser = async (id, data) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id,
     },
@@ -132,7 +139,7 @@ const updateUser = async (id, data) => {
 };
 
 const updateLastLogin = async (id) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id,
     },
@@ -151,7 +158,7 @@ const saveEmailVerificationToken = async ({
   emailVerificationToken,
   emailVerificationExpires,
 }) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id: userId,
     },
@@ -163,7 +170,7 @@ const saveEmailVerificationToken = async ({
 };
 
 const findUserByVerificationToken = async (emailVerificationToken) => {
-  return prisma.user.findFirst({
+  return _user.findFirst({
     where: {
       emailVerificationToken,
     },
@@ -171,7 +178,7 @@ const findUserByVerificationToken = async (emailVerificationToken) => {
 };
 
 const clearEmailVerificationToken = async (userId) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id: userId,
     },
@@ -183,7 +190,7 @@ const clearEmailVerificationToken = async (userId) => {
 };
 
 const markEmailVerified = async (userId) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id: userId,
     },
@@ -204,7 +211,7 @@ const savePasswordResetToken = async ({
   resetPasswordToken,
   resetPasswordExpires,
 }) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id: userId,
     },
@@ -216,7 +223,7 @@ const savePasswordResetToken = async ({
 };
 
 const findUserByResetToken = async (resetPasswordToken) => {
-  return prisma.user.findFirst({
+  return _user.findFirst({
     where: {
       resetPasswordToken,
     },
@@ -224,7 +231,7 @@ const findUserByResetToken = async (resetPasswordToken) => {
 };
 
 const clearPasswordResetToken = async (userId) => {
-  return prisma.user.update({
+  return _user.update({
     where: {
       id: userId,
     },
@@ -237,7 +244,7 @@ const clearPasswordResetToken = async (userId) => {
 
 //
 
-module.exports = {
+export default {
   findUserByEmail,
   findUserByPhone,
   findUserById,

@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 // FIND DRIVER BY USER ID
 
@@ -386,7 +386,7 @@ const findRecentRides = async (driverId, limit = 10) => {
   });
 };
 
-module.exports = {
+export default {
   findDriverByUserId,
   updateDriverProfile,
   updateAvailability,

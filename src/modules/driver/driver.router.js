@@ -1,11 +1,9 @@
-const express = require("express");
+import { Router } from "express";
+const router = Router();
+import controller from "./driver.controller.js";
 
-const router = express.Router();
-
-const controller = require("./driver.controller");
-
-const { protect, restrictTo } = require("../../middleware/auth.middleware");
-
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect, restrictTo } = authMidl;
 router.use(protect, restrictTo("driver"));
 
 // Dashboard
@@ -26,5 +24,4 @@ router.get("/vehicle-change-requests", controller.getVehicleChangeRequests);
 
 // Availability
 router.put("/availability", controller.updateAvailability);
-
-module.exports = router;
+export default router;

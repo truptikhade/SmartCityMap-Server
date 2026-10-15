@@ -1,6 +1,7 @@
-const express = require("express");
-const router = express.Router();
-const controller = require("./transit.controller");
+import { Router } from "express";
+const router = Router();
+
+import controller from "./transit.controller.js";
 
 router.get("/routes", controller.getAllRoutes);
 router.get("/routes/:id", controller.getRouteById);
@@ -12,4 +13,4 @@ router.get("/fare/estimate", controller.fareEstimate);
 router.get("/journey/search", controller.journeySearch);
 router.get("/routes/:id/live", controller.getRouteLiveVehicles);
 
-module.exports = router;
+export default router;

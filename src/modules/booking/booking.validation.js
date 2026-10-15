@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 const createBookingSchema = Joi.object({
   routeId: Joi.string().uuid().required(),
@@ -11,4 +11,4 @@ const createBookingSchema = Joi.object({
   travelDate: Joi.date().iso().required(),
 });
 
-module.exports = { createBookingSchema };
+export default { createBookingSchema };

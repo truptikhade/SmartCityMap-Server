@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 const nearbySchema = Joi.object({
   lat: Joi.number().required(),
@@ -34,4 +34,4 @@ const reviewSchema = Joi.object({
   comment: Joi.string().max(500).allow("", null),
 });
 
-module.exports = { nearbySchema, createPlaceSchema, reviewSchema };
+export default { nearbySchema, createPlaceSchema, reviewSchema };

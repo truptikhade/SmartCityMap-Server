@@ -1,13 +1,12 @@
-const express = require("express");
+import { Router } from "express";
+const router = Router();
+import controller from "./ai.controller.js";
 
-const router = express.Router();
-
-const controller = require("./ai.controller");
-
-const { protect } = require("../../middleware/auth.middleware");
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect } = authMidl;
 
 router.get("/recommendations", protect, controller.getRecommendations);
 
 router.get("/specialties/:placeId", protect, controller.getSpecialties);
 
-module.exports = router;
+export default router;

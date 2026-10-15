@@ -19,4 +19,4 @@ const bookingModel = (booking) => ({
   payment: booking.payment || null,
 });
 
-module.exports = { bookingModel };
+export default { bookingModel };

@@ -1,12 +1,12 @@
-const Joi = require("joi");
+import Joi from "joi";
 
-const registerSchema = Joi.object({
+export const registerSchema = Joi.object({
   fname: Joi.string().min(2).max(50).required().messages({
     "string.empty": "First name is required",
     "string.min": "First name must be at least 2 characters",
   }),
 
-  lname: Joi.string().min(2).max(50).allow("", null),
+  lname: Joi.string().min(2),
 
   email: Joi.string().email().required().messages({
     "string.email": "Please provide a valid email",
@@ -81,7 +81,7 @@ const resetPasswordSchema = Joi.object({
   }),
 });
 
-module.exports = {
+export default {
   registerSchema,
   driverRegisterSchema,
   loginSchema,

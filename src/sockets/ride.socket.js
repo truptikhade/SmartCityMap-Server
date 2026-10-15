@@ -1,4 +1,4 @@
-const prisma = require("../config/prisma");
+import prisma from "../config/prisma.js";
 
 //
 // ROOMS
@@ -227,7 +227,7 @@ const emitRideUpdateToDriver = ({ io, driverId, ride }) => {
   });
 };
 
-module.exports = {
+export default {
   initRideSocket,
   emitNewRideRequest,
   emitRideUpdate,

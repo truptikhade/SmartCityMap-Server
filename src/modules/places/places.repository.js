@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+import prisma from "../../config/prisma.js";
 
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
@@ -245,7 +245,7 @@ const updatePlaceRating = async (placeId) => {
   });
 };
 
-module.exports = {
+export default {
   findNearby,
   findById,
   findAllPlaces,

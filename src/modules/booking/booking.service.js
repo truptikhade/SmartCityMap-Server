@@ -1,7 +1,9 @@
-const AppError = require("../../utils/AppError");
-const repo = require("./booking.repository");
-const { emitBookingCancelled } = require("./booking.events");
-const { bookingModel } = require("./booking.model");
+import AppError from "../../utils/AppError.js";
+import repo from "./booking.repository.js";
+import bookingEvents from "./booking.events.js";
+const { emitBookingCancelled } = bookingEvents;
+import bookingModelModule from "./booking.model.js";
+const { bookingModel } = bookingModelModule;
 
 const createBooking = async (data) => {
   // 1. Check seat availability
@@ -49,9 +51,4 @@ const cancelBooking = async (id, userId, bookingId) => {
   return bookingModel(updated);
 };
 
-module.exports = {
-  createBooking,
-  getMyBookings,
-  getBookingById,
-  cancelBooking,
-};
+export default { createBooking, getMyBookings, getBookingById, cancelBooking };

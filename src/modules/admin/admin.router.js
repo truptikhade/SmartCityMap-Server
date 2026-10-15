@@ -1,38 +1,42 @@
-const express = require("express");
-
-const router = express.Router();
-
-const controller = require("./admin.controller");
-
-const { protect, restrictTo } = require("../../middleware/auth.middleware");
+import { Router } from "express";
+const router = Router();
+import admin from "./admin.controller.js";
+const {
+  getAllDrivers,
+  getDriverById,
+  approveDriver,
+  rejectDriver,
+  getPendingVehicleChangeRequests,
+  approveVehicleChangeRequest,
+  rejectVehicleChangeRequest,
+} = admin;
+import authMidl from "../../middleware/auth.middleware.js";
+const { protect, restrictTo } = authMidl;
 
 router.use(protect, restrictTo("admin"));
 
 // DRIVER APPROVAL
 
-router.get("/drivers", controller.getAllDrivers);
+router.get("/drivers", getAllDrivers);
 
-router.get("/drivers/:driverId", controller.getDriverById);
+router.get("/drivers/:driverId", getDriverById);
 
-router.put("/drivers/:driverId/approve", controller.approveDriver);
+router.put("/drivers/:driverId/approve", approveDriver);
 
-router.put("/drivers/:driverId/reject", controller.rejectDriver);
+router.put("/drivers/:driverId/reject", rejectDriver);
 
 // VEHICLE CHANGE REQUESTS
 
-router.get(
-  "/vehicle-change-requests",
-  controller.getPendingVehicleChangeRequests,
-);
+router.get("/vehicle-change-requests", getPendingVehicleChangeRequests);
 
 router.put(
   "/vehicle-change-requests/:requestId/approve",
-  controller.approveVehicleChangeRequest,
+  approveVehicleChangeRequest,
 );
 
 router.put(
   "/vehicle-change-requests/:requestId/reject",
-  controller.rejectVehicleChangeRequest,
+  rejectVehicleChangeRequest,
 );
 
-module.exports = router;
+export default router;
