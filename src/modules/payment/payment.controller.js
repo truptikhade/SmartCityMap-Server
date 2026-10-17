@@ -12,7 +12,11 @@ const initiate = asyncHandler(async (req, res) => {
 });
 
 const verify = asyncHandler(async (req, res) => {
-  const data = await paymentService.verifyPayment(req.body, req.app.get("io"));
+  const data = await paymentService.verifyPayment(
+    req.body,
+    req.app.get("io"),
+    req.user.id,
+  );
   return successResponse(res, 200, "Payment verified successfully", data);
 });
 

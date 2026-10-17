@@ -27,7 +27,10 @@ const getProfile = asyncHandler(async (req, res) => {
 // UPDATE PROFILE
 
 const updateProfile = asyncHandler(async (req, res) => {
-  const data = await driverService.updateProfile(req.user.id, req.body);
+  const data = await driverService.updateProfile({
+    ...req.body,
+    userId: req.user.id,
+  });
 
   return successResponse(res, 200, "Driver profile updated successfully", data);
 });
@@ -86,10 +89,10 @@ const getVehicleChangeRequests = asyncHandler(async (req, res) => {
 // UPDATE AVAILABILITY
 
 const updateAvailability = asyncHandler(async (req, res) => {
-  const data = await driverService.updateAvailability(
-    req.user.id,
-    req.body.isAvailable,
-  );
+  const data = await driverService.updateAvailability({
+    userId: req.user.id,
+    isAvailable: req.body.isAvailable,
+  });
 
   return successResponse(
     res,

@@ -1,6 +1,6 @@
 import prisma from "../../config/prisma.js";
 
-const { user: _user, driverProfile, rideRequest, $transaction } = prisma;
+const { user: _user, driverProfile, rideRequest } = prisma;
 
 // FIND AVAILABLE DRIVERS FOR VEHICLE TYPE
 const findPassengerById = async (passengerId) => {
@@ -359,7 +359,7 @@ const findRequestedRides = async ({ vehicleType }) => {
 // ASSIGN DRIVER
 
 const assignDriver = async ({ rideId, driverId, vehicleId }) => {
-  return $transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const ride = await tx.rideRequest.findUnique({
       where: {
         id: rideId,

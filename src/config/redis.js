@@ -167,4 +167,6 @@ const redisSerivce= {
   isAvailable: () => !!client,
 };
 
+await initializeClient();
+
 export default redisSerivce;

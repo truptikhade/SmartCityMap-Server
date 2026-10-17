@@ -11,6 +11,7 @@ const {
   getProfile,
   updateProfile,
   changePassword,
+  deleteAccount,
   sendVerification,
 } = cont;
 
@@ -27,6 +28,7 @@ const {
   driverRegisterSchema,
   loginSchema,
   changePasswordSchema,
+  deleteAccountSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } = vall;
@@ -80,6 +82,8 @@ router.put(
   validate(changePasswordSchema),
   changePassword,
 );
+
+router.delete("/profile", protect, validate(deleteAccountSchema), deleteAccount);
 
 // Send / resend verification email
 router.post("/send-verification", authLimiter, protect, sendVerification);

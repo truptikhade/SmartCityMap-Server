@@ -48,10 +48,10 @@ const arrivedRideSchema = Joi.object({
 
 const verifyOtpSchema = Joi.object({
   otp: Joi.string()
-    .pattern(/^[0-9]{4,6}$/)
+    .pattern(/^[0-9]{4}$/)
     .required()
     .messages({
-      "string.pattern.base": "OTP must contain 4 to 6 digits",
+      "string.pattern.base": "OTP must contain 4 digits",
     }),
 });
 

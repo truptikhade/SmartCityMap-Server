@@ -207,17 +207,14 @@ const getNearbyRecommendations = async ({ lat, lng, message }) => {
 
   const hour = now.getHours();
 
-  let timeOfDay = "day";
-
-  if (hour >= 5 && hour < 12) {
-    timeOfDay = "morning";
-  } else if (hour >= 12 && hour < 17) {
-    timeOfDay = "afternoon";
-  } else if (hour >= 17 && hour < 21) {
-    timeOfDay = "evening";
-  } else {
-    timeOfDay = "night";
-  }
+  const timeOfDay =
+    hour >= 5 && hour < 12
+      ? "morning"
+      : hour >= 12 && hour < 17
+        ? "afternoon"
+        : hour >= 17 && hour < 21
+          ? "evening"
+          : "night";
 
   /*
   

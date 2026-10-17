@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma.js";
+import { Prisma } from "@prisma/client";
 
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
@@ -27,18 +28,14 @@ const tagToCategory = (tags = {}) => {
   return "other";
 };
 
-const haversine = (lat1, lng1, lat2, lng2) => {
-  const R = 6371000;
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
-
 const buildOverpassQuery = ({ lat, lng, radius, category }) => {
+  if (category === "other") {
+    return `[out:json][timeout:20];(
+      node["name"](around:${radius},${lat},${lng});
+      way["name"](around:${radius},${lat},${lng});
+    );out center 50;`;
+  }
+
   const tags = category ? CATEGORY_TAGS[category] || [] : ALL_TAGS;
   if (tags.length === 0) return null;
 
@@ -107,7 +104,7 @@ const elementToPlaceData = (el) => {
   const tags = el.tags || {};
   const elLat = el.lat ?? el.center?.lat;
   const elLng = el.lon ?? el.center?.lon;
-  if (!elLat || !elLng || !tags.name) return null;
+  if (elLat == null || elLng == null || !tags.name) return null;
 
   const addressParts = [
     tags["addr:housenumber"],
@@ -132,7 +129,7 @@ const findNearby = async ({ lat, lng, radius = 2000, category, search }) => {
   const candidates = elements.map(elementToPlaceData).filter(Boolean);
 
   // Upsert each into the local table so ids/reviews/ratings work normally
-  const places = await Promise.all(
+  await Promise.all(
     candidates.map((data) =>
       prisma.place.upsert({
         where: { osmId: data.osmId },
@@ -140,31 +137,55 @@ const findNearby = async ({ lat, lng, radius = 2000, category, search }) => {
           name: data.name,
           address: data.address,
           openHours: data.openHours,
+          lat: data.lat,
+          lng: data.lng,
         },
         create: data,
       }),
     ),
   );
 
-  // Filter by search query if provided
-  let filtered = places;
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = places.filter(
-      (p) =>
-        p.name.toLowerCase().includes(searchLower) ||
-        (p.address && p.address.toLowerCase().includes(searchLower)) ||
-        (p.category && p.category.toLowerCase().includes(searchLower)),
-    );
-  }
+  const categoryFilter = category
+    ? Prisma.sql`AND p.category = ${category}`
+    : Prisma.empty;
+  const searchFilter = search
+    ? Prisma.sql`AND (
+        strpos(lower(p.name), lower(${search})) > 0
+        OR strpos(lower(COALESCE(p.address, '')), lower(${search})) > 0
+        OR strpos(lower(p.category), lower(${search})) > 0
+      )`
+    : Prisma.empty;
 
-  return filtered
-    .map((p) => ({
-      ...p,
-      distance: Math.round(haversine(lat, lng, p.lat, p.lng) * 100) / 100,
-    }))
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, 50);
+  return prisma.$queryRaw`
+    SELECT
+      p.id,
+      p.name,
+      p.category,
+      p.address,
+      p.rating,
+      p."openHours",
+      p.lat,
+      p.lng,
+      p."createdAt",
+      p."osmId",
+      ROUND(
+        ST_Distance(
+          p.location,
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+        )::numeric,
+        2
+      )::double precision AS distance
+    FROM geo.places AS p
+    WHERE ST_DWithin(
+      p.location,
+      ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+      ${radius}
+    )
+    ${categoryFilter}
+    ${searchFilter}
+    ORDER BY distance ASC
+    LIMIT 50
+  `;
 };
 
 //  everything below is unchanged from your original file

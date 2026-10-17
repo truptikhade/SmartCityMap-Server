@@ -215,13 +215,22 @@ const getStopsByRoute = async (routeId) => {
 };
 
 const getNearbyStops = async ({ lat, lng, radius }) => {
-  if (lat == null || lng == null) {
-    throw new AppError("Latitude and longitude required", 400);
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    throw new AppError("Valid latitude and longitude are required", 400);
   }
 
   const stops = await repo.findNearbyStops({
-    lat: parseFloat(lat),
-    lng: parseFloat(lng),
+    lat: latitude,
+    lng: longitude,
     radius: radius ? parseInt(radius) : 1500,
   });
 
@@ -250,7 +259,16 @@ const getTripsByRoute = async ({ routeId, date }) => {
     date,
   });
 
-  return trips.map(tripModel);
+  return trips.map((trip) => {
+    const occupiedSeats = new Set(
+      trip.bookings.map((booking) => booking.seatNumber).filter(Boolean),
+    ).size;
+
+    return tripModel({
+      ...trip,
+      availableSeats: Math.max(0, trip.totalSeats - occupiedSeats),
+    });
+  });
 };
 
 /*
@@ -524,11 +542,21 @@ const journeySearch = async ({ fromLat, fromLng, toLat, toLng, date }) => {
      * This comes from your existing
      * TransitRoute -> Trip relationship.
      */
-    const availableTrips = (route.trips || []).filter(
-      (trip) => Number(trip.availableSeats) > 0,
-    );
+    const availableTrips = (route.trips || [])
+      .map((trip) => {
+        const occupiedSeats = new Set(
+          trip.bookings.map((booking) => booking.seatNumber).filter(Boolean),
+        ).size;
 
-    const trip = availableTrips[0] || route.trips?.[0] || null;
+        return {
+          ...trip,
+          availableSeats: Math.max(0, trip.totalSeats - occupiedSeats),
+        };
+      })
+      .filter((trip) => trip.availableSeats > 0);
+
+    const trip = availableTrips[0] || null;
+    if (!trip) continue;
 
     /*
     

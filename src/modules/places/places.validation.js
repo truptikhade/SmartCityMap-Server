@@ -25,8 +25,8 @@ const createPlaceSchema = Joi.object({
   category: Joi.string().required(),
   address: Joi.string().allow("", null),
   openHours: Joi.string().allow("", null),
-  lat: Joi.number().required(),
-  lng: Joi.number().required(),
+  lat: Joi.number().min(-90).max(90).required(),
+  lng: Joi.number().min(-180).max(180).required(),
 });
 
 const reviewSchema = Joi.object({

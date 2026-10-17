@@ -9,11 +9,21 @@ const {
   getPendingVehicleChangeRequests,
   approveVehicleChangeRequest,
   rejectVehicleChangeRequest,
+  createTransitSchedule,
 } = admin;
 import authMidl from "../../middleware/auth.middleware.js";
 const { protect, restrictTo } = authMidl;
+import validate from "../../middleware/validate.middleware.js";
+import adminValidation from "./admin.validation.js";
+const { createTransitScheduleSchema } = adminValidation;
 
 router.use(protect, restrictTo("admin"));
+
+router.post(
+  "/transit/schedules",
+  validate(createTransitScheduleSchema),
+  createTransitSchedule,
+);
 
 // DRIVER APPROVAL
 

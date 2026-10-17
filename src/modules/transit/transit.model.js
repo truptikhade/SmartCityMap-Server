@@ -53,6 +53,7 @@ const liveModel = (live) => ({
   delayMinutes: live.delayMinutes,
   speedKmph: live.speedKmph,
   bearing: live.bearing,
+  trackingSource: live.trackingSource || "simulated",
   updatedAt: live.updatedAt,
   currentStop: live.currentStop || null,
   nextStop: live.nextStop || null,

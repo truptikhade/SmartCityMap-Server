@@ -4,6 +4,11 @@ const { successResponse } = res;
 
 import adminService from "./admin.service.js";
 
+const createTransitSchedule = asyncHandler(async (req, res) => {
+  const data = await adminService.createTransitSchedule(req.body);
+  return successResponse(res, 201, "Transit schedule created successfully", data);
+});
+
 // DRIVERS
 
 const getAllDrivers = asyncHandler(async (req, res) => {
@@ -73,6 +78,7 @@ const rejectVehicleChangeRequest = asyncHandler(async (req, res) => {
 });
 
 export default {
+  createTransitSchedule,
   getAllDrivers,
   getDriverById,
   approveDriver,

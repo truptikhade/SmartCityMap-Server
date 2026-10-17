@@ -6,7 +6,7 @@ const createBookingSchema = Joi.object({
   boardingStopId: Joi.string().uuid().allow(null, ""),
   dropStopId: Joi.string().uuid().allow(null, ""),
   transitType: Joi.string().valid("bus", "train", "auto").required(),
-  seatNumber: Joi.string().allow(null, ""),
+  seatNumber: Joi.string().trim().allow(null, ""),
   farePaid: Joi.number().positive().required(),
   travelDate: Joi.date().iso().required(),
 });

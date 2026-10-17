@@ -16,6 +16,7 @@ const {
   updateLastLogin,
   findUserById,
   updateUser,
+  deactivateUser,
   findUserByVerificationToken,
   markEmailVerified,
   savePasswordResetToken,
@@ -312,6 +313,29 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
   };
 };
 
+const deleteAccount = async (userId, { currentPassword }) => {
+  const user = await findUserById(userId);
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  const isMatch = await compare(currentPassword, user.passwordHash);
+  if (!isMatch) {
+    throw new AppError("Current password is incorrect", 400);
+  }
+
+  const deactivated = await deactivateUser(userId);
+  if (!deactivated) {
+    throw new AppError(
+      "Complete or cancel your active ride before deleting your account",
+      409,
+    );
+  }
+
+  return { message: "Account deactivated successfully" };
+};
+
 //
 // SEND / RESEND EMAIL VERIFICATION
 //
@@ -541,6 +565,7 @@ export default {
   getProfile,
   updateProfile,
   changePassword,
+  deleteAccount,
   sendVerification,
   verifyEmail,
   forgotPassword,

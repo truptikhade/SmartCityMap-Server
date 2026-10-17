@@ -14,6 +14,8 @@ const { createBookingSchema } = bookingValidation;
 // All booking routes require login
 router.use(protect);
 
+router.get("/trips/:tripId/seats", controller.getTrainSeatInventory);
+
 router.post(
   "/",
   bookingLimiter,

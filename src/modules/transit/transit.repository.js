@@ -45,9 +45,6 @@ const findAllRoutesWithStops = async (date) => {
             in: ["scheduled", "running"],
           },
 
-          availableSeats: {
-            gt: 0,
-          },
         },
 
         orderBy: {
@@ -55,6 +52,12 @@ const findAllRoutesWithStops = async (date) => {
         },
 
         take: 1,
+        include: {
+          bookings: {
+            where: { status: { not: "cancelled" } },
+            select: { seatNumber: true },
+          },
+        },
       },
     },
 
@@ -78,35 +81,51 @@ const findStopsByRoute = async (routeId) => {
 const findNearbyStops = async ({ lat, lng, radius = 1500 }) => {
   return prisma.$queryRaw`
     SELECT
-      s.*,
-      ROUND(CAST(
-        6371000 * acos(
-          cos(radians(${lat})) * cos(radians(s.lat)) *
-          cos(radians(s.lng) - radians(${lng})) +
-          sin(radians(${lat})) * sin(radians(s.lat))
-        ) AS numeric), 2
-      ) AS distance
+      s.id,
+      s.route_id AS "routeId",
+      s.stop_name AS "stopName",
+      s.stop_code AS "stopCode",
+      s.stop_order AS "stopOrder",
+      s.lat,
+      s.lng,
+      s.arrival_time AS "arrivalTime",
+      s.departure_time AS "departureTime",
+      s.distance_from_prev_km AS "distanceFromPrevKm",
+      ROUND(
+        ST_Distance(
+          s.location,
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+        )::numeric,
+        2
+      )::double precision AS distance
     FROM transit.transit_stops s
-    WHERE (
-      6371000 * acos(
-        cos(radians(${lat})) * cos(radians(s.lat)) *
-        cos(radians(s.lng) - radians(${lng})) +
-        sin(radians(${lat})) * sin(radians(s.lat))
-      )
-    ) <= ${radius}
+    WHERE ST_DWithin(
+      s.location,
+      ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+      ${radius}
+    )
     ORDER BY distance ASC
     LIMIT 50
   `;
 };
 
 const findTripsByRoute = async ({ routeId, date }) => {
+  const startDate = new Date(`${date}T00:00:00`);
+  const endDate = new Date(`${date}T23:59:59.999`);
+
   return prisma.trip.findMany({
     where: {
       routeId,
-      travelDate: new Date(date),
-      status: { notIn: ["cancelled"] },
+      travelDate: { gte: startDate, lte: endDate },
+      status: "scheduled",
     },
     orderBy: { departureTime: "asc" },
+    include: {
+      bookings: {
+        where: { status: { not: "cancelled" } },
+        select: { seatNumber: true },
+      },
+    },
   });
 };
 
@@ -168,6 +187,12 @@ const upsertLiveTracking = async ({
   });
 };
 
+const updateTripStatus = async (tripId, status) =>
+  prisma.trip.update({
+    where: { id: tripId },
+    data: { status },
+  });
+
 const findRouteWithActiveTrips = async ({ routeId, date }) => {
   const startDate = date
     ? new Date(`${date}T00:00:00.000`)
@@ -228,5 +253,6 @@ export default {
   findTripById,
   findLiveTracking,
   upsertLiveTracking,
+  updateTripStatus,
   findRouteWithActiveTrips,
 };

@@ -196,6 +196,7 @@ model Place {
   openHours         String?
   lat               Float
   lng               Float
+  location          Unsupported("geography(Point, 4326)")
   createdAt         DateTime          @default(now())
   osmId             String?           @unique
   reviews           Review[]
@@ -298,6 +299,7 @@ model TransitStop {
   stopOrder          Int     @map("stop_order")
   lat                Float
   lng                Float
+  location           Unsupported("geography(Point, 4326)")
   arrivalTime        String? @map("arrival_time")
   departureTime      String? @map("departure_time")
   distanceFromPrevKm Float?  @map("distance_from_prev_km")
@@ -361,18 +363,19 @@ model LiveTracking {
 // 
 
 model Booking {
-  id             String   @id @default(uuid())
-  userId         String   @map("user_id")
-  routeId        String   @map("route_id")
-  tripId         String?  @map("trip_id")
-  boardingStopId String?  @map("boarding_stop_id")
-  dropStopId     String?  @map("drop_stop_id")
-  transitType    String   @map("transit_type")
-  seatNumber     String?  @map("seat_number")
-  farePaid       Float    @map("fare_paid")
-  travelDate     DateTime @map("travel_date")
-  status         String   @default("pending")
-  bookedAt       DateTime @default(now()) @map("booked_at")
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  routeId           String   @map("route_id")
+  tripId            String?  @map("trip_id")
+  boardingStopId    String?  @map("boarding_stop_id")
+  dropStopId        String?  @map("drop_stop_id")
+  transitType       String   @map("transit_type")
+  seatNumber        String?  @map("seat_number")
+  farePaid          Float    @map("fare_paid")
+  travelDate        DateTime @map("travel_date")
+  status            String   @default("pending")
+  idempotencyKey    String?  @unique @map("idempotency_key")
+  bookedAt          DateTime @default(now()) @map("booked_at")
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
   route        TransitRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
@@ -392,6 +395,7 @@ model Payment {
   method        String
   status        String    @default("pending")
   transactionId String?   @unique @map("transaction_id")
+  razorpayPaymentId String? @unique @map("razorpay_payment_id")
   paidAt        DateTime? @map("paid_at")
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)

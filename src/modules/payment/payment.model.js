@@ -5,6 +5,7 @@ const paymentModel = (payment) => ({
   method: payment.method,
   status: payment.status,
   transactionId: payment.transactionId,
+  razorpayPaymentId: payment.razorpayPaymentId,
   paidAt: payment.paidAt,
   booking: payment.booking || null,
 });

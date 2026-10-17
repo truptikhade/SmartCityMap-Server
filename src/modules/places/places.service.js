@@ -4,12 +4,22 @@ import place from "./places.model.js";
 const { placeModel, reviewModel } = place;
 
 const getNearbyPlaces = async ({ lat, lng, radius, category, search }) => {
-  if (!lat || !lng)
-    throw new AppError("Latitude and longitude are required", 400);
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    throw new AppError("Valid latitude and longitude are required", 400);
+  }
 
   const places = await repo.findNearby({
-    lat: parseFloat(lat),
-    lng: parseFloat(lng),
+    lat: latitude,
+    lng: longitude,
     radius: radius ? parseInt(radius) : 2000,
     category,
     search,

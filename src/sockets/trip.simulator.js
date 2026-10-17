@@ -1,75 +1,137 @@
 import transitRepository from "../modules/transit/transit.repository.js";
-const { upsertLiveTracking } = transitRepository;
+const { upsertLiveTracking, updateTripStatus } = transitRepository;
 
 const activeTripSimulators = new Map();
+const UPDATE_INTERVAL_MS = 5000;
 
-const startTripSimulator = (io, { tripId, routeId, stops, vehicleNumber }) => {
-  if (activeTripSimulators.has(tripId)) {
-    console.log(`Simulator already running for trip ${tripId}`);
-    return;
-  }
+const timeToMinutes = (time) => {
+  const match = String(time || "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+};
 
+const distanceKm = (from, to) => {
+  const radians = (degrees) => (degrees * Math.PI) / 180;
+  const latitudeDelta = radians(to.lat - from.lat);
+  const longitudeDelta = radians(to.lng - from.lng);
+  const a =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(radians(from.lat)) *
+      Math.cos(radians(to.lat)) *
+      Math.sin(longitudeDelta / 2) ** 2;
+
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const startTripSimulator = (
+  io,
+  { tripId, routeId, stops, vehicleNumber, travelDate, departureTime, arrivalTime },
+) => {
+  if (activeTripSimulators.has(tripId)) return;
   if (!stops || stops.length < 2) {
-    console.log(`Simulator: not enough stops for trip ${tripId}`);
+    console.error(`Simulator: not enough stops for trip ${tripId}`);
     return;
   }
 
-  let currentStopIndex = 0;
-  let progress = 0; // 0.0 → 1.0 between two stops
+  const routeStops = [...stops]
+    .sort((a, b) => a.stopOrder - b.stopOrder)
+    .map((stop) => ({
+      ...stop,
+      lat: Number(stop.lat),
+      lng: Number(stop.lng),
+    }));
+
+  const segments = routeStops.slice(1).map((stop, index) => ({
+    from: routeStops[index],
+    to: stop,
+    distanceKm: distanceKm(routeStops[index], stop),
+  }));
+  const totalDistanceKm = segments.reduce(
+    (total, segment) => total + segment.distanceKm,
+    0,
+  );
+  const departureMinutes = timeToMinutes(departureTime);
+  const arrivalMinutes = timeToMinutes(arrivalTime);
+  const serviceDate = new Date(travelDate);
+  const startAt = new Date(serviceDate);
+  if (departureMinutes !== null) {
+    startAt.setHours(
+      Math.floor(departureMinutes / 60),
+      departureMinutes % 60,
+      0,
+      0,
+    );
+  }
+
+  const scheduledDurationMinutes =
+    departureMinutes !== null &&
+    arrivalMinutes !== null &&
+    arrivalMinutes > departureMinutes
+      ? arrivalMinutes - departureMinutes
+      : null;
+  const durationMs =
+    (scheduledDurationMinutes ??
+      Math.max(15, Math.round((totalDistanceKm / 35) * 60))) *
+    60_000;
 
   console.log(
-    `🚌 Simulator started: trip ${tripId} | route ${routeId} | ${stops.length} stops`,
+    `Simulated transit started: trip ${tripId} | route ${routeId} | ${routeStops.length} stops`,
   );
+  updateTripStatus(tripId, "running").catch((error) => {
+    console.error(`Could not mark trip ${tripId} as running:`, error.message);
+  });
 
   const interval = setInterval(async () => {
-    const fromStop = stops[currentStopIndex];
-    const toStop = stops[currentStopIndex + 1];
+    const elapsedMs = Math.max(0, Date.now() - startAt.getTime());
+    const progress = Math.min(1, elapsedMs / durationMs);
+    const targetDistanceKm = totalDistanceKm * progress;
+    let passedDistanceKm = 0;
+    let segment = segments[segments.length - 1];
+    let segmentProgress = 1;
 
-    // Reached final stop
-    if (!toStop) {
-      console.log(`🏁 Trip ${tripId} completed all stops`);
-      clearInterval(interval);
-      activeTripSimulators.delete(tripId);
-      return;
+    for (const candidate of segments) {
+      const segmentEndKm = passedDistanceKm + candidate.distanceKm;
+      if (targetDistanceKm <= segmentEndKm) {
+        segment = candidate;
+        segmentProgress =
+          candidate.distanceKm === 0
+            ? 1
+            : (targetDistanceKm - passedDistanceKm) / candidate.distanceKm;
+        break;
+      }
+      passedDistanceKm = segmentEndKm;
     }
 
-    // Advance progress
-    progress += 0.05;
-    if (progress >= 1) {
-      progress = 0;
-      currentStopIndex++;
-      console.log(
-        `🚏 Trip ${tripId} → stop ${currentStopIndex + 1}/${stops.length}: ${stops[currentStopIndex]?.stopName || "done"}`,
-      );
-    }
-
-    // Interpolate GPS position between two stops
-    const lat = fromStop.lat + (toStop.lat - fromStop.lat) * progress;
-    const lng = fromStop.lng + (toStop.lng - fromStop.lng) * progress;
-
-    // Bearing (direction angle 0–360)
-    const dLng = toStop.lng - fromStop.lng;
-    const dLat = toStop.lat - fromStop.lat;
-    const bearing = (Math.atan2(dLng, dLat) * (180 / Math.PI) + 360) % 360;
-
-    // Simulated speed with slight variation
-    const speedKmph = Math.round(40 + Math.random() * 20);
+    const isComplete = progress >= 1;
+    const lat =
+      segment.from.lat + (segment.to.lat - segment.from.lat) * segmentProgress;
+    const lng =
+      segment.from.lng + (segment.to.lng - segment.from.lng) * segmentProgress;
+    const currentStop = isComplete ? routeStops.at(-1) : segment.from;
+    const nextStop = isComplete ? null : segment.to;
+    const speedKmph = isComplete
+      ? 0
+      : Number((totalDistanceKm / (durationMs / 3_600_000)).toFixed(1));
+    const bearing = isComplete
+      ? 0
+      : (Math.atan2(
+          segment.to.lng - segment.from.lng,
+          segment.to.lat - segment.from.lat,
+        ) *
+          180) /
+          Math.PI;
 
     try {
-      // 1. Save to DB
       await upsertLiveTracking({
         tripId,
         currentLat: lat,
         currentLng: lng,
-        currentStopId: fromStop.id,
-        nextStopId: toStop.id,
+        currentStopId: currentStop.id,
+        nextStopId: nextStop?.id || null,
         speedKmph,
-        bearing: Math.round(bearing),
+        bearing: (bearing + 360) % 360,
         delayMinutes: 0,
       });
 
-      // 2. Broadcast to all clients watching this route
-      // Note: emit directly via io (bypasses driver role check in tracking.socket.js)
       io.to(`route:${routeId}`).emit("vehicle:location", {
         routeId,
         tripId,
@@ -77,26 +139,32 @@ const startTripSimulator = (io, { tripId, routeId, stops, vehicleNumber }) => {
         lat,
         lng,
         speedKmph,
-        bearing: Math.round(bearing),
-        currentStop: fromStop.stopName,
-        nextStop: toStop.stopName,
+        bearing: (bearing + 360) % 360,
+        trackingSource: "simulated",
+        currentStop: currentStop.stopName,
+        nextStop: nextStop?.stopName || null,
         updatedAt: new Date().toISOString(),
       });
-    } catch (err) {
-      console.error(`Simulator error for trip ${tripId}:`, err.message);
+
+      if (isComplete) {
+        clearInterval(interval);
+        activeTripSimulators.delete(tripId);
+        await updateTripStatus(tripId, "completed");
+        console.log(`Simulated trip ${tripId} completed`);
+      }
+    } catch (error) {
+      console.error(`Simulator error for trip ${tripId}:`, error.message);
     }
-  }, 3000); // emit every 3 seconds
+  }, UPDATE_INTERVAL_MS);
 
   activeTripSimulators.set(tripId, interval);
 };
 
 const stopTripSimulator = (tripId) => {
   const interval = activeTripSimulators.get(tripId);
-  if (interval) {
-    clearInterval(interval);
-    activeTripSimulators.delete(tripId);
-    console.log(`🛑 Simulator stopped: trip ${tripId}`);
-  }
+  if (!interval) return;
+  clearInterval(interval);
+  activeTripSimulators.delete(tripId);
 };
 
 const getActiveSimulators = () => [...activeTripSimulators.keys()];

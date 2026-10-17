@@ -21,9 +21,15 @@ const initRideSocket = (io) => {
     // DRIVER ONLINE
     socket.on("driver:online", async ({ driverId, vehicleType } = {}) => {
       try {
-        if (!driverId || !vehicleType) {
+        const authenticatedDriverId = socket.userId;
+        if (
+          socket.role !== "driver" ||
+          !authenticatedDriverId ||
+          (driverId && driverId !== authenticatedDriverId) ||
+          !vehicleType
+        ) {
           socket.emit("ride:error", {
-            message: "driverId and vehicleType are required",
+            message: "Authenticated driver and vehicleType are required",
           });
 
           return;
@@ -31,7 +37,7 @@ const initRideSocket = (io) => {
 
         const driver = await prisma.driverProfile.findUnique({
           where: {
-            userId: driverId,
+            userId: authenticatedDriverId,
           },
 
           include: {
@@ -98,23 +104,30 @@ const initRideSocket = (io) => {
           return;
         }
 
-        socket.join(getDriverRoom(driverId));
+        const previousVehicleType = socket.data.vehicleType;
+        if (previousVehicleType && previousVehicleType !== vehicleType) {
+          socket.leave(getVehicleTypeRoom(previousVehicleType));
+        }
+
+        socket.join(getDriverRoom(authenticatedDriverId));
 
         socket.join(getVehicleTypeRoom(vehicleType));
 
-        socket.data.driverId = driverId;
+        socket.data.driverId = authenticatedDriverId;
 
         socket.data.vehicleType = vehicleType;
 
         socket.data.isDriver = true;
 
         socket.emit("driver:online:success", {
-          driverId,
+          driverId: authenticatedDriverId,
           vehicleType,
           message: "Driver is online",
         });
 
-        console.log(`🚗 Driver ${driverId} online as ${vehicleType}`);
+        console.log(
+          `🚗 Driver ${authenticatedDriverId} online as ${vehicleType}`,
+        );
       } catch (error) {
         console.error("Driver online socket error:", error.message);
 
@@ -147,17 +160,20 @@ const initRideSocket = (io) => {
 
     // DRIVER OFFLINE
     socket.on("driver:offline", () => {
-      const { driverId, vehicleType } = socket.data || {};
+      const { driverId } = socket.data || {};
 
       if (driverId) {
         socket.leave(getDriverRoom(driverId));
       }
 
-      if (vehicleType) {
-        socket.leave(getVehicleTypeRoom(vehicleType));
+      for (const room of socket.rooms) {
+        if (room.startsWith("drivers:")) {
+          socket.leave(room);
+        }
       }
 
       socket.data.isDriver = false;
+      delete socket.data.vehicleType;
 
       socket.emit("driver:offline:success", {
         message: "Driver is offline",

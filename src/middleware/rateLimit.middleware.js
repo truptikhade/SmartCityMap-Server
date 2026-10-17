@@ -1,4 +1,5 @@
 import rateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
 import redis from "../config/redis.js";
 
 // Rate limit store
@@ -7,12 +8,11 @@ import redis from "../config/redis.js";
 // server restarts and multiple instances. Falls back to the
 // default in-memory store when Redis is unavailable.
 
-const getStore = () => {
+const getStore = (prefix) => {
   if (redis.isAvailable()) {
-    const { RedisStore } = require("rate-limit-redis");
     return new RedisStore({
-      client: redis.client,
-      prefix: "rl:",
+      sendCommand: (...args) => redis.client.sendCommand(args),
+      prefix,
     });
   }
   return undefined; // default in-memory store
@@ -29,7 +29,7 @@ const globalLimiter = rateLimit({
   max: 1000, // 1000 requests per 15 min
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore(),
+  store: getStore("rl:global:"),
   message: {
     success: false,
     message: "Too many requests from this IP. Please try again later.",
@@ -43,7 +43,7 @@ const authLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore(),
+  store: getStore("rl:auth:"),
   message: {
     success: false,
     message: "Too many login attempts. Please try again after 15 minutes.",
@@ -57,7 +57,7 @@ const registerLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore(),
+  store: getStore("rl:register:"),
   message: {
     success: false,
     message: "Too many accounts created. Please try again after 1 hour.",
@@ -70,7 +70,7 @@ const otpLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore(),
+  store: getStore("rl:otp:"),
   message: {
     success: false,
     message: "Too many OTP requests. Please try again after 15 minutes.",
@@ -92,7 +92,7 @@ const apiLimiter = rateLimit({
   max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore(),
+  store: getStore("rl:api:"),
   message: {
     success: false,
     message: "Too many API requests. Please try again later.",
@@ -106,7 +106,7 @@ const bookingLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore(),
+  store: getStore("rl:booking:"),
   message: {
     success: false,
     message: "Too many booking attempts. Please try again after 1 hour.",

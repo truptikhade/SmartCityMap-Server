@@ -8,6 +8,7 @@ import "dotenv/config";
 
 // Prisma
 import prisma from "./src/config/prisma.js";
+import transitRepository from "./src/modules/transit/transit.repository.js";
 
 // Routes
 import authRoutes from "./src/modules/auth/auth.router.js";
@@ -34,6 +35,7 @@ const { initRideSocket } = rideSocket;
 // Transit simulator dependencies
 import tripSimulator from "./src/sockets/trip.simulator.js";
 const { startTripSimulator } = tripSimulator;
+const { getActiveSimulators } = tripSimulator;
 // Create app and server
 const app = express();
 app.set("trust proxy", 1);
@@ -42,8 +44,11 @@ const server = createServer(app);
 
 // CORS configuration
 const allowedOrigins = [
-  process.env.CLIENT_URL,
   "https://smart-city-map-client-six.vercel.app",
+  ...(process.env.CLIENT_URL || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean),
 ].filter(Boolean);
 
 const isAllowedOrigin = (origin) => {
@@ -53,7 +58,7 @@ const isAllowedOrigin = (origin) => {
   }
 
   // Allow configured origins
-  if (allowedOrigins.includes(origin)) {
+  if (allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
     return true;
   }
 
@@ -106,14 +111,18 @@ await initSocket(io);
 initTrackingSocket(io);
 initRideSocket(io);
 
-// Automatically start today's transit simulators
-const autoStartSimulators = async (io) => {
+const timeToMinutes = (time) => {
+  const match = String(time || "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+};
+
+// Start simulated vehicles only during their scheduled service window.
+const startDueTripSimulators = async (io) => {
   try {
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const trips = await prisma.trip.findMany({
       where: {
@@ -127,20 +136,51 @@ const autoStartSimulators = async (io) => {
       },
     });
 
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const activeTripIds = new Set(getActiveSimulators());
+    let started = 0;
+
     for (const trip of trips) {
+      const departureMinutes = timeToMinutes(trip.departureTime);
+      const arrivalMinutes = timeToMinutes(trip.arrivalTime);
+
+      if (departureMinutes === null) continue;
+
+      if (
+        trip.status === "scheduled" &&
+        arrivalMinutes !== null &&
+        arrivalMinutes >= departureMinutes &&
+        currentMinutes > arrivalMinutes
+      ) {
+        await transitRepository.updateTripStatus(trip.id, "completed");
+        continue;
+      }
+
+      const isInServiceWindow =
+        currentMinutes >= departureMinutes &&
+        (arrivalMinutes === null ||
+          arrivalMinutes < departureMinutes ||
+          currentMinutes <= arrivalMinutes);
+
+      if (!isInServiceWindow || activeTripIds.has(trip.id)) continue;
+
       const stops = await transitRepository.findStopsByRoute(trip.routeId);
 
       startTripSimulator(io, {
         tripId: trip.id,
         routeId: trip.routeId,
         stops,
-        vehicleNumber: trip.vehicleNumber,
+        ...trip,
       });
+      started += 1;
     }
 
-    console.log(`Auto-started ${trips.length} trip simulator(s)`);
+    if (started > 0) {
+      console.log(`Started ${started} scheduled transit simulator(s)`);
+    }
   } catch (err) {
-    console.error("Auto-start simulator error:", err.message);
+    console.error("Transit simulator scheduler error:", err.message);
   }
 };
 
@@ -204,7 +244,12 @@ server.listen(PORT, async () => {
   console.log(`http://localhost:${PORT}/health`);
   console.log("");
 
-  await autoStartSimulators(io);
+  await startDueTripSimulators(io);
+  const simulatorScheduler = setInterval(
+    () => startDueTripSimulators(io),
+    15_000,
+  );
+  simulatorScheduler.unref();
 });
 
 // Graceful shutdown

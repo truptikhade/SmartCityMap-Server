@@ -52,14 +52,16 @@ const getTrips = asyncHandler(async (req, res) =>
   ),
 );
 
-const getLive = asyncHandler(async (req, res) =>
-  successResponse(
+const getLive = asyncHandler(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  return successResponse(
     res,
     200,
     "Live tracking fetched",
     await transitService.getLiveTracking(req.params.tripId),
-  ),
-);
+  );
+});
 
 const fareEstimate = asyncHandler(async (req, res) =>
   successResponse(

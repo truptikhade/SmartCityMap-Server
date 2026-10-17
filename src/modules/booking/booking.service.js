@@ -5,20 +5,29 @@ const { emitBookingCancelled } = bookingEvents;
 import bookingModelModule from "./booking.model.js";
 const { bookingModel } = bookingModelModule;
 
-const createBooking = async (data) => {
-  // 1. Check seat availability
-  if (data.tripId && data.seatNumber) {
-    const taken = await repo.isSeatTaken({
-      tripId: data.tripId,
-      seatNumber: data.seatNumber,
-      travelDate: data.travelDate,
-    });
-    if (taken) throw new AppError("Seat already booked for this date", 400);
+const createBooking = async (data, idempotencyKey) => {
+  const transitType = String(data.transitType || "").toLowerCase();
+  if (transitType === "train") {
+    if (!data.tripId || !data.seatNumber) {
+      throw new AppError("Select a train trip and seat", 400);
+    }
+    if (!idempotencyKey || !/^[\w.:-]{8,128}$/.test(idempotencyKey)) {
+      throw new AppError("A valid Idempotency-Key header is required", 400);
+    }
   }
 
-  // 2. Create booking
-  const booking = await repo.createBooking(data);
+  const booking = await repo.createBooking({
+    ...data,
+    travelDate: data.travelDate.slice(0, 10),
+    idempotencyKey,
+  });
   return bookingModel(booking);
+};
+
+const getTrainSeatInventory = async (tripId) => {
+  const inventory = await repo.findTrainSeatInventory(tripId);
+  if (!inventory) throw new AppError("Train trip not found", 404);
+  return inventory;
 };
 
 const getMyBookings = async (userId) => {
@@ -33,7 +42,7 @@ const getBookingById = async (id, userId) => {
   return bookingModel(booking);
 };
 
-const cancelBooking = async (id, userId, bookingId) => {
+const cancelBooking = async (id, userId) => {
   const booking = await repo.findBookingById(id);
 
   if (!booking) throw new AppError("Booking not found", 404);
@@ -51,4 +60,10 @@ const cancelBooking = async (id, userId, bookingId) => {
   return bookingModel(updated);
 };
 
-export default { createBooking, getMyBookings, getBookingById, cancelBooking };
+export default {
+  createBooking,
+  getTrainSeatInventory,
+  getMyBookings,
+  getBookingById,
+  cancelBooking,
+};

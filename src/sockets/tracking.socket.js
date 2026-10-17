@@ -1,28 +1,8 @@
-import jwt from "jsonwebtoken";
-
 // Simple in-memory throttle map: socket.id -> last emit timestamp
 const lastEmitAt = new Map();
 const THROTTLE_MS = 2000; // server-side floor: max 1 location update per driver per 2s
 
 const initTrackingSocket = (io) => {
-  //  Auth middleware — every socket connection must carry a valid JWT
-  io.use((socket, next) => {
-    try {
-      const token =
-        socket.handshake.auth?.token ||
-        socket.handshake.headers?.authorization?.split(" ")[1];
-
-      if (!token) return next(new Error("Authentication required"));
-
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.userId = decoded.id;
-      socket.role = decoded.role;
-      next();
-    } catch (err) {
-      next(new Error("Invalid or expired token"));
-    }
-  });
-
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id} (user ${socket.userId})`);
 

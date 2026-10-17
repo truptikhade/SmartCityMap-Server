@@ -29,7 +29,7 @@ const protect = async (req, res, next) => {
     }
     req.user = user;
     next();
-  } catch (err) {
+  } catch (_err) {
     return errorResponse(
       res,
       401,

@@ -2,11 +2,15 @@ import { createHmac } from "crypto";
 import Razorpay from "razorpay";
 import AppError from "../../utils/AppError.js";
 import paymentRepository from "./payment.repository.js";
-const { findByBookingId, createPayment, updatePaymentStatus } =
-  paymentRepository;
+const {
+  findByBookingId,
+  createPayment,
+  updatePaymentStatus,
+  completePayment,
+} = paymentRepository;
 
 import bookingRepository from "../booking/booking.repository.js";
-const { findBookingById, updateBookingStatus } = bookingRepository;
+const { findBookingById } = bookingRepository;
 
 import paymentModelModule from "./payment.model.js";
 const { paymentModel } = paymentModelModule;
@@ -25,13 +29,24 @@ const initiatePayment = async ({ bookingId, userId }) => {
   const booking = await findBookingById(bookingId);
   if (!booking) throw new AppError("Booking not found", 404);
   if (booking.userId !== userId) throw new AppError("Unauthorized", 403);
-  if (booking.status !== "pending")
+  if (booking.status !== "pending") {
     throw new AppError("Booking is not in pending state", 400);
+  }
 
   // 2. Check if payment already exists
   const existingPayment = await findByBookingId(bookingId);
   if (existingPayment && existingPayment.status === "success") {
     throw new AppError("Payment already completed", 400);
+  }
+
+  if (existingPayment?.status === "pending" && existingPayment.transactionId) {
+    return {
+      orderId: existingPayment.transactionId,
+      amount: Math.round(existingPayment.amount * 100),
+      currency: "INR",
+      keyId: process.env.RAZORPAY_KEY_ID,
+      bookingId,
+    };
   }
 
   // 3. Create Razorpay order
@@ -66,6 +81,7 @@ const initiatePayment = async ({ bookingId, userId }) => {
 const verifyPayment = async (
   { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId },
   io,
+  userId,
 ) => {
   // 1. Verify signature
   const body = `${razorpay_order_id}|${razorpay_payment_id}`;
@@ -80,13 +96,33 @@ const verifyPayment = async (
     throw new AppError("Payment verification failed — invalid signature", 400);
   }
 
-  // 2. Update payment to success
-  const payment = await updatePaymentStatus(razorpay_order_id, "success");
+  const booking = await findBookingById(bookingId);
+  if (!booking) throw new AppError("Booking not found", 404);
+  if (booking.userId !== userId) throw new AppError("Unauthorized", 403);
 
-  // 3. Update booking to confirmed
-  await updateBookingStatus(bookingId, "confirmed");
+  const existingPayment = await findByBookingId(bookingId);
+  if (!existingPayment || existingPayment.transactionId !== razorpay_order_id) {
+    throw new AppError("Payment order does not belong to this booking", 400);
+  }
+  if (existingPayment.status === "success") {
+    if (existingPayment.razorpayPaymentId !== razorpay_payment_id) {
+      throw new AppError("Booking payment has already been completed", 400);
+    }
+    return paymentModel(existingPayment);
+  }
+  if (booking.status !== "pending") {
+    throw new AppError("Booking is not in pending state", 400);
+  }
+  if (existingPayment.status !== "pending") {
+    throw new AppError("Payment is not pending", 400);
+  }
 
-  // 4. Notify anyone watching this booking (rider + driver rooms)
+  const payment = await completePayment(
+    razorpay_order_id,
+    razorpay_payment_id,
+    bookingId,
+  );
+
   emitPaymentSuccess(io, bookingId, paymentModel(payment)); // ← single emit, io passed in
 
   return paymentModel(payment);
@@ -107,7 +143,11 @@ const refundPayment = async (bookingId, userId) => {
     throw new AppError("Only successful payments can be refunded", 400);
 
   // 3. Create Razorpay refund
-  await razorpay.payments.refund(payment.transactionId, {
+  if (!payment.razorpayPaymentId) {
+    throw new AppError("Razorpay payment reference not found", 400);
+  }
+
+  await razorpay.payments.refund(payment.razorpayPaymentId, {
     amount: Math.round(payment.amount * 100), // paise
     notes: { reason: "Booking cancelled by user" },
   });

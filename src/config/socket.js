@@ -1,5 +1,3 @@
-import { Server } from "socket.io";
-
 import redisAdapter from "@socket.io/redis-adapter";
 const { createAdapter } = redisAdapter;
 
@@ -14,14 +12,8 @@ let io = null;
 /**
  * Initialize Socket.IO Server with Redis Adapter, JWT Auth, and Event Handlers
  */
-const initSocket = async (server) => {
-  io = new Server(server, {
-    cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:3000",
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-  });
+const initSocket = async (socketServer) => {
+  io = socketServer;
 
   // Redis adapter for scaling across horizontal instances
   if (redis.isAvailable()) {

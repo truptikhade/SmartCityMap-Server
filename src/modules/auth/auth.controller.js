@@ -68,6 +68,12 @@ const changePassword = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Password changed successfully", result);
 });
 
+const deleteAccount = asyncHandler(async (req, res) => {
+  const result = await authService.deleteAccount(req.user.id, req.body);
+
+  return successResponse(res, 200, result.message, result);
+});
+
 //
 // FORGOT PASSWORD
 //
@@ -117,6 +123,7 @@ export default {
   getProfile,
   updateProfile,
   changePassword,
+  deleteAccount,
   forgotPassword,
   resetPassword,
   sendVerification,

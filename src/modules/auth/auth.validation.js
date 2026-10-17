@@ -65,6 +65,10 @@ const changePasswordSchema = Joi.object({
   newPassword: Joi.string().min(6).required(),
 });
 
+const deleteAccountSchema = Joi.object({
+  currentPassword: Joi.string().required(),
+});
+
 const forgotPasswordSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "Please provide a valid email",
@@ -86,6 +90,7 @@ export default {
   driverRegisterSchema,
   loginSchema,
   changePasswordSchema,
+  deleteAccountSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 };

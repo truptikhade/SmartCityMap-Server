@@ -4,7 +4,6 @@ const {
   user: _user,
   driverProfile: _driverProfile,
   vehicle: _vehicle,
-  $transaction,
 } = prisma;
 
 //
@@ -84,7 +83,7 @@ const createDriver = async ({
   model,
   color,
 }) => {
-  return $transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         fname,
@@ -137,6 +136,39 @@ const updateUser = async (id, data) => {
     data,
   });
 };
+
+const deactivateUser = async (userId) =>
+  prisma.$transaction(async (tx) => {
+    const activeRide = await tx.rideRequest.findFirst({
+      where: {
+        OR: [{ passengerId: userId }, { driverId: userId }],
+        status: {
+          in: [
+            "REQUESTED",
+            "DRIVER_ARRIVING",
+            "DRIVER_ARRIVED",
+            "OTP_VERIFIED",
+            "IN_PROGRESS",
+          ],
+        },
+      },
+      select: { id: true },
+    });
+
+    if (activeRide) return false;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
+
+    await tx.driverProfile.updateMany({
+      where: { userId },
+      data: { isAvailable: false },
+    });
+
+    return true;
+  });
 
 const updateLastLogin = async (id) => {
   return _user.update({
@@ -256,6 +288,7 @@ export default {
   createDriver,
 
   updateUser,
+  deactivateUser,
   updateLastLogin,
 
   // Email verification

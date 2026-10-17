@@ -7,7 +7,7 @@ const placeModel = (place) => ({
   openHours: place.openHours,
   lat: place.lat,
   lng: place.lng,
-  distance: place.distance || null,
+  distance: place.distance ?? null,
   specialties: place.nearbySpecialties || [],
   reviews: place.reviews || [],
 });
