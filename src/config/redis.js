@@ -19,18 +19,28 @@ const DEFAULT_TTL_SECONDS = 15 * 60; // 15 minutes
 const url = process.env.REDIS_URL || "redis://localhost:6379";
 
 let client = null;
-let initialized = false;
+let initialization = null;
 
 // Initialize client
 
 const initializeClient = async () => {
+  if (client?.isReady) return true;
+  if (initialization) return initialization;
+
   const _client = redis.createClient({
     url,
-    socket: { connectTimeout: 10000 },
+    socket: {
+      connectTimeout: 5000,
+      reconnectStrategy: (retries) =>
+        retries >= 3 ? false : Math.min(250 * 2 ** retries, 1000),
+    },
   });
 
   _client.on("error", (err) => {
-    console.error("Redis client error:", err.message);
+    console.error(
+      "Redis client error:",
+      err.code || err.message || "Unknown Redis connection error",
+    );
   });
 
   _client.on("end", () => {
@@ -41,16 +51,24 @@ const initializeClient = async () => {
     console.log("Redis connected");
   });
 
-  try {
-    await _client.connect();
-    client = _client;
-    initialized = true;
-    return true;
-  } catch (err) {
-    console.error("Redis connection failed:", err.message);
-    initialized = false;
-    return false;
-  }
+  initialization = _client
+    .connect()
+    .then(() => {
+      client = _client;
+      return true;
+    })
+    .catch((err) => {
+      console.error(
+        "Redis connection failed; continuing without Redis:",
+        err.code || err.message || "Unknown Redis connection error",
+      );
+      return false;
+    })
+    .finally(() => {
+      initialization = null;
+    });
+
+  return initialization;
 };
 
 // Helper functions (closures over the Redis client)
@@ -68,10 +86,9 @@ const deserialize = (raw) => {
 };
 
 const ensureInit = async () => {
-  if (!initialized) {
-    await initializeClient();
+  if (!client?.isReady && !(await initializeClient())) {
+    throw new Error("Redis is unavailable");
   }
-  return true;
 };
 
 const set = async (key, value, ttlSeconds = DEFAULT_TTL_SECONDS) => {
@@ -164,9 +181,9 @@ const redisSerivce= {
 
   // Initialization API
   init: initializeClient,
-  isAvailable: () => !!client,
+  isAvailable: () => client?.isReady === true,
 };
 
-await initializeClient();
+void initializeClient();
 
 export default redisSerivce;

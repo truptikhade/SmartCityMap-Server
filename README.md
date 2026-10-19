@@ -34,6 +34,11 @@ Set the Railway service's start command to `npm start`. Apply committed
 database migrations to the production database with `npx prisma migrate deploy`
 before serving traffic. Do not run `npm run seed` against production.
 
+Redis connection attempts are bounded and do not prevent the API from
+starting. If Redis is unavailable, rate limiting uses the in-memory fallback
+and Socket.IO runs without the Redis adapter; configure a valid `REDIS_URL` for
+shared rate limits and multi-instance socket broadcasting.
+
 ### Vercel frontend
 
 Set `NEXT_PUBLIC_SERVER_URL` in Vercel to the public Railway backend URL, for
