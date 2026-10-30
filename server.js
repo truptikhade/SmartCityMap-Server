@@ -24,18 +24,22 @@ import rideRoutes from "./src/modules/ride/ride.router.js";
 // Middleware
 import errorHandler from "./src/middleware/error.middleware.js";
 import rateLimitMidl from "./src/middleware/rateLimit.middleware.js";
+
 const { globalLimiter, apiLimiter } = rateLimitMidl;
 
 // Socket configuration
 import socketConfig from "./src/config/socket.js";
 const { initSocket } = socketConfig;
+
 import rideSocket from "./src/sockets/ride.socket.js";
 const { initRideSocket } = rideSocket;
+
 // Transit simulator dependencies
 import tripSimulator from "./src/sockets/trip.simulator.js";
-const { startTripSimulator } = tripSimulator;
-const { getActiveSimulators } = tripSimulator;
-// Create app and server
+
+const { startTripSimulator, getActiveSimulators } = tripSimulator;
+
+// Create Express app and HTTP server
 const app = express();
 app.set("trust proxy", 1);
 
@@ -51,12 +55,8 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 const isAllowedOrigin = (origin) => {
-  // Allow requests without an Origin header
-  if (!origin) {
-    return true;
-  }
+  if (!origin) return true;
 
-  // Allow configured origins
   if (allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
     return true;
   }
@@ -109,16 +109,19 @@ globalThis.io = io;
 await initSocket(io);
 initRideSocket(io);
 
+// Convert HH:mm time into minutes
 const timeToMinutes = (time) => {
   const match = String(time || "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+
   return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 };
 
-// Start simulated vehicles only during their scheduled service window.
+// Start simulated vehicles during scheduled service windows
 const startDueTripSimulators = async (io) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -136,11 +139,14 @@ const startDueTripSimulators = async (io) => {
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
     const activeTripIds = new Set(getActiveSimulators());
+
     let started = 0;
 
     for (const trip of trips) {
       const departureMinutes = timeToMinutes(trip.departureTime);
+
       const arrivalMinutes = timeToMinutes(trip.arrivalTime);
 
       if (departureMinutes === null) continue;
@@ -152,6 +158,7 @@ const startDueTripSimulators = async (io) => {
         currentMinutes > arrivalMinutes
       ) {
         await transitRepository.updateTripStatus(trip.id, "completed");
+
         continue;
       }
 
@@ -161,7 +168,9 @@ const startDueTripSimulators = async (io) => {
           arrivalMinutes < departureMinutes ||
           currentMinutes <= arrivalMinutes);
 
-      if (!isInServiceWindow || activeTripIds.has(trip.id)) continue;
+      if (!isInServiceWindow || activeTripIds.has(trip.id)) {
+        continue;
+      }
 
       const stops = await transitRepository.findStopsByRoute(trip.routeId);
 
@@ -171,6 +180,7 @@ const startDueTripSimulators = async (io) => {
         stops,
         ...trip,
       });
+
       started += 1;
     }
 
@@ -232,48 +242,56 @@ app.use((req, res) => {
 // Global error handler
 app.use(errorHandler);
 
-// Start server
-const PORT = process.env.PORT || 9000;
+// Start HTTP server only during local development.
+// Vercel manages the HTTP server for deployed Functions.
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 9000;
 
-server.listen(PORT, async () => {
-  console.log("");
-  console.log(`SmartCity API running on port ${PORT}`);
-  console.log(`http://localhost:${PORT}`);
-  console.log(`http://localhost:${PORT}/health`);
-  console.log("");
+  server.listen(PORT, async () => {
+    console.log("");
+    console.log(`SmartCity API running on port ${PORT}`);
+    console.log(`http://localhost:${PORT}`);
+    console.log(`http://localhost:${PORT}/health`);
+    console.log("");
 
-  await startDueTripSimulators(io);
-  const simulatorScheduler = setInterval(
-    () => startDueTripSimulators(io),
-    15_000,
-  );
-  simulatorScheduler.unref();
-});
+    await startDueTripSimulators(io);
 
-// Graceful shutdown
-let isShuttingDown = false;
+    const simulatorScheduler = setInterval(
+      () => startDueTripSimulators(io),
+      15_000,
+    );
 
-const shutdown = async (signal) => {
-  if (isShuttingDown) return;
-  isShuttingDown = true;
-
-  console.log(`\n${signal} received. Shutting down gracefully...`);
-
-  server.close(async () => {
-    try {
-      await prisma.$disconnect();
-      console.log("Server closed and Prisma disconnected");
-      process.exit(0);
-    } catch (err) {
-      console.error("Shutdown error:", err);
-      process.exit(1);
-    }
+    simulatorScheduler.unref();
   });
-};
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+  // Graceful shutdown for local development
+  let isShuttingDown = false;
 
-// Export app and Socket.IO
+  const shutdown = async (signal) => {
+    if (isShuttingDown) return;
+
+    isShuttingDown = true;
+
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+
+    server.close(async () => {
+      try {
+        await prisma.$disconnect();
+
+        console.log("Server closed and Prisma disconnected");
+
+        process.exit(0);
+      } catch (err) {
+        console.error("Shutdown error:", err);
+        process.exit(1);
+      }
+    });
+  };
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+}
+
+// Export Express app for Vercel
 export { app, io };
 export default app;
