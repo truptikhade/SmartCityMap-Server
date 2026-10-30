@@ -29,7 +29,6 @@ const { globalLimiter, apiLimiter } = rateLimitMidl;
 // Socket configuration
 import socketConfig from "./src/config/socket.js";
 const { initSocket } = socketConfig;
-import initTrackingSocket from "./src/sockets/tracking.socket.js";
 import rideSocket from "./src/sockets/ride.socket.js";
 const { initRideSocket } = rideSocket;
 // Transit simulator dependencies
@@ -108,7 +107,6 @@ globalThis.io = io;
 
 // Initialize sockets
 await initSocket(io);
-initTrackingSocket(io);
 initRideSocket(io);
 
 const timeToMinutes = (time) => {

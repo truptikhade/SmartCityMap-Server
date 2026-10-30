@@ -8,6 +8,8 @@ import prisma from "../config/prisma.js";
 import redis from "./redis.js";
 
 let io = null;
+const lastLocationEmitAt = new Map();
+const LOCATION_THROTTLE_MS = 2000;
 
 /**
  * Initialize Socket.IO Server with Redis Adapter, JWT Auth, and Event Handlers
@@ -16,6 +18,7 @@ const initSocket = async (socketServer) => {
   io = socketServer;
 
   // Redis adapter for scaling across horizontal instances
+  await redis.init();
   if (redis.isAvailable()) {
     const pubClient = redis.client.duplicate();
     const subClient = redis.client.duplicate();
@@ -71,31 +74,21 @@ const initSocket = async (socketServer) => {
     );
 
     // Booking Room Management
-    socket.on("booking:join", (bookingId) => {
-      if (bookingId) socket.join(`booking:${bookingId}`);
+    socket.on("booking:join", async (bookingId) => {
+      if (typeof bookingId !== "string" || !bookingId) return;
+      try {
+        const booking = await prisma.booking.findFirst({
+          where: { id: bookingId, userId: socket.userId },
+          select: { id: true },
+        });
+        if (booking) socket.join(`booking:${bookingId}`);
+      } catch (error) {
+        console.error("Booking room authorization failed:", error.message);
+      }
     });
 
     socket.on("booking:leave", (bookingId) => {
       if (bookingId) socket.leave(`booking:${bookingId}`);
-    });
-
-    // Driver Location Broadcasting
-    socket.on("driver:location", ({ bookingId, lat, lng } = {}) => {
-      if (
-        socket.role !== "driver" ||
-        !bookingId ||
-        lat === undefined ||
-        lng === undefined
-      ) {
-        return;
-      }
-
-      socket.to(`booking:${bookingId}`).emit("driver:location", {
-        bookingId,
-        lat,
-        lng,
-        updatedAt: new Date(),
-      });
     });
 
     // Transit Route Room Management
@@ -120,6 +113,11 @@ const initSocket = async (socketServer) => {
           return;
         }
 
+      const now = Date.now();
+      const lastEmitAt = lastLocationEmitAt.get(socket.id) || 0;
+      if (now - lastEmitAt < LOCATION_THROTTLE_MS) return;
+      lastLocationEmitAt.set(socket.id, now);
+
         socket.to(`route:${routeId}`).emit("vehicle:location", {
           routeId,
           vehicleNumber,
@@ -131,6 +129,7 @@ const initSocket = async (socketServer) => {
     );
 
     socket.on("disconnect", (reason) => {
+      lastLocationEmitAt.delete(socket.id);
       console.log(`Socket disconnected: ${socket.id} (${reason})`);
     });
   });

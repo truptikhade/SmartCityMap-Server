@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma.js";
+import AppError from "../../utils/AppError.js";
 
 const { user: _user, driverProfile, rideRequest } = prisma;
 
@@ -409,20 +410,25 @@ const assignDriver = async ({ rideId, driverId, vehicleId }) => {
       throw new Error("Driver or vehicle is not available");
     }
 
-    return tx.rideRequest.update({
+    const assignment = await tx.rideRequest.updateMany({
       where: {
         id: rideId,
+        status: "REQUESTED",
       },
-
       data: {
         driverId,
         vehicleId,
-
         status: "ACCEPTED",
-
         acceptedAt: new Date(),
       },
+    });
 
+    if (assignment.count !== 1) {
+      throw new AppError("Ride is no longer available", 409);
+    }
+
+    return tx.rideRequest.findUnique({
+      where: { id: rideId },
       include: {
         passenger: {
           select: {

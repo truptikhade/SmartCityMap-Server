@@ -212,19 +212,19 @@ const requestVehicleChange = async ({
   const driver = await repo.findDriverByUserId(userId);
 
   if (!driver) {
-    throw new Error("Driver profile not found");
+    throw new AppError("Driver profile not found", 404);
   }
 
   if (!driver.isApproved) {
-    throw new Error("Your driver account is not approved yet");
+    throw new AppError("Your driver account is not approved yet", 403);
   }
 
   if (!vehicleNumber) {
-    throw new Error("Vehicle number is required");
+    throw new AppError("Vehicle number is required", 400);
   }
 
   if (!vehicleType) {
-    throw new Error("Vehicle type is required");
+    throw new AppError("Vehicle type is required", 400);
   }
 
   const normalizedVehicleNumber = vehicleNumber.trim().toUpperCase();

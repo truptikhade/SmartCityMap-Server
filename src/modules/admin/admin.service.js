@@ -65,7 +65,7 @@ const getDriverById = async (driverId) => {
   const driver = await adminRepository.findDriverById(driverId);
 
   if (!driver) {
-    throw new Error("Driver not found");
+    throw new AppError("Driver not found", 404);
   }
 
   return driverModel(driver);
@@ -127,11 +127,11 @@ const approveVehicleChangeRequest = async (requestId) => {
   const request = await adminRepository.findVehicleChangeRequestById(requestId);
 
   if (!request) {
-    throw new Error("Vehicle change request not found");
+    throw new AppError("Vehicle change request not found", 404);
   }
 
   if (request.status !== "PENDING") {
-    throw new Error("This vehicle change request has already been reviewed");
+    throw new AppError("This vehicle change request has already been reviewed", 409);
   }
 
   const result = await adminRepository.approveVehicleChangeRequest(requestId);
@@ -145,11 +145,11 @@ const rejectVehicleChangeRequest = async (requestId) => {
   const request = await adminRepository.findVehicleChangeRequestById(requestId);
 
   if (!request) {
-    throw new Error("Vehicle change request not found");
+    throw new AppError("Vehicle change request not found", 404);
   }
 
   if (request.status !== "PENDING") {
-    throw new Error("This vehicle change request has already been reviewed");
+    throw new AppError("This vehicle change request has already been reviewed", 409);
   }
 
   return adminRepository.rejectVehicleChangeRequest(requestId);
