@@ -11,7 +11,8 @@
     "start": "node server.js",
     "studio": "prisma studio",
     "migrate": "prisma migrate dev",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
