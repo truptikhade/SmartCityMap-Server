@@ -146,7 +146,6 @@ const startDueTripSimulators = async (io) => {
 
     for (const trip of trips) {
       const departureMinutes = timeToMinutes(trip.departureTime);
-
       const arrivalMinutes = timeToMinutes(trip.arrivalTime);
 
       if (departureMinutes === null) continue;

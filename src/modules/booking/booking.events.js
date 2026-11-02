@@ -1,25 +1,22 @@
-import socketConfig from "../../config/socket.js";
-const { getIO } = socketConfig;
+import { emitToRoom } from "../../config/realtime.js";
 
-const emitBookingCancelled = (bookingId, data) => {
+const emitBookingCancelled = async (bookingId, data) => {
   try {
-    const io = getIO();
-    io.to(`booking:${bookingId}`).emit("booking:cancelled", {
+    await emitToRoom(`booking:${bookingId}`, "booking:cancelled", {
       bookingId,
       ...data,
       cancelledAt: new Date().toISOString(),
     });
     console.log(`📡 Emitted booking:cancelled for ${bookingId}`);
   } catch (err) {
-    // Don't throw — socket failure should never break booking cancel
+    // A socket failure should never break a booking cancel.
     console.error("Socket emit error (booking:cancelled):", err.message);
   }
 };
 
-const emitBookingConfirmed = (bookingId, data) => {
+const emitBookingConfirmed = async (bookingId, data) => {
   try {
-    const io = getIO();
-    io.to(`booking:${bookingId}`).emit("booking:confirmed", {
+    await emitToRoom(`booking:${bookingId}`, "booking:confirmed", {
       bookingId,
       ...data,
     });

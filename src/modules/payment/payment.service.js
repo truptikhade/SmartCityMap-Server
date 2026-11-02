@@ -2,12 +2,8 @@ import { createHmac } from "crypto";
 import Razorpay from "razorpay";
 import AppError from "../../utils/AppError.js";
 import paymentRepository from "./payment.repository.js";
-const {
-  findByBookingId,
-  createPayment,
-  updatePaymentStatus,
-  completePayment,
-} = paymentRepository;
+const { findByBookingId, createPayment, updatePaymentStatus, completePayment } =
+  paymentRepository;
 
 import bookingRepository from "../booking/booking.repository.js";
 const { findBookingById } = bookingRepository;
@@ -80,7 +76,6 @@ const initiatePayment = async ({ bookingId, userId }) => {
 
 const verifyPayment = async (
   { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId },
-  io,
   userId,
 ) => {
   // 1. Verify signature
@@ -123,7 +118,8 @@ const verifyPayment = async (
     bookingId,
   );
 
-  emitPaymentSuccess(io, bookingId, paymentModel(payment)); // ← single emit, io passed in
+  // Publishes through Redis; the socket server delivers it to clients.
+  await emitPaymentSuccess(bookingId, paymentModel(payment));
 
   return paymentModel(payment);
 };
@@ -157,6 +153,7 @@ const refundPayment = async (bookingId, userId) => {
 
   return paymentModel(updated);
 };
+
 const getPaymentStatus = async (bookingId, userId) => {
   // Verify booking belongs to user
   const booking = await findBookingById(bookingId);
