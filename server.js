@@ -8,7 +8,6 @@ import "dotenv/config";
 
 // Prisma
 import prisma from "./src/config/prisma.js";
-import transitRepository from "./src/modules/transit/transit.repository.js";
 
 // Routes
 import authRoutes from "./src/modules/auth/auth.router.js";
@@ -34,10 +33,7 @@ const { initSocket } = socketConfig;
 import rideSocket from "./src/sockets/ride.socket.js";
 const { initRideSocket } = rideSocket;
 
-// Transit simulator dependencies
-import tripSimulator from "./src/sockets/trip.simulator.js";
-
-const { startTripSimulator, getActiveSimulators } = tripSimulator;
+import { startDueTripSimulators } from "./src/sockets/trip.scheduler.js";
 
 // Create Express app and HTTP server
 const app = express();
@@ -108,88 +104,6 @@ globalThis.io = io;
 // Initialize sockets
 await initSocket(io);
 initRideSocket(io);
-
-// Convert HH:mm time into minutes
-const timeToMinutes = (time) => {
-  const match = String(time || "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-
-  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
-};
-
-// Start simulated vehicles during scheduled service windows
-const startDueTripSimulators = async (io) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const trips = await prisma.trip.findMany({
-      where: {
-        travelDate: {
-          gte: today,
-          lte: endOfDay,
-        },
-        status: {
-          in: ["scheduled", "running"],
-        },
-      },
-    });
-
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    const activeTripIds = new Set(getActiveSimulators());
-
-    let started = 0;
-
-    for (const trip of trips) {
-      const departureMinutes = timeToMinutes(trip.departureTime);
-      const arrivalMinutes = timeToMinutes(trip.arrivalTime);
-
-      if (departureMinutes === null) continue;
-
-      if (
-        trip.status === "scheduled" &&
-        arrivalMinutes !== null &&
-        arrivalMinutes >= departureMinutes &&
-        currentMinutes > arrivalMinutes
-      ) {
-        await transitRepository.updateTripStatus(trip.id, "completed");
-
-        continue;
-      }
-
-      const isInServiceWindow =
-        currentMinutes >= departureMinutes &&
-        (arrivalMinutes === null ||
-          arrivalMinutes < departureMinutes ||
-          currentMinutes <= arrivalMinutes);
-
-      if (!isInServiceWindow || activeTripIds.has(trip.id)) {
-        continue;
-      }
-
-      const stops = await transitRepository.findStopsByRoute(trip.routeId);
-
-      startTripSimulator(io, {
-        tripId: trip.id,
-        routeId: trip.routeId,
-        stops,
-        ...trip,
-      });
-
-      started += 1;
-    }
-
-    if (started > 0) {
-      console.log(`Started ${started} scheduled transit simulator(s)`);
-    }
-  } catch (err) {
-    console.error("Transit simulator scheduler error:", err.message);
-  }
-};
 
 // Global middleware
 app.use(helmet());
