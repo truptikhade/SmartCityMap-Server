@@ -1,0 +1,26 @@
+BharatCode Build League Submission
+
+Project name: SmartCity Map
+Team: Trupti Khade (@truptikhade)
+Category: Everyday assistance
+
+What it does:
+SmartCity Map is a transit and ride-booking platform for city commuters. Users search places, compare road-route alternatives, track vehicles in real time, and get suggestions for their trip.
+
+How it uses BharatCode:
+The trip recommendation feature calls the BharatCode model API to suggest route and travel options based on the user's start point, destination, and preferences. [Confirm this matches the feature in your code before submitting.]
+
+Tech stack:
+Frontend: Next.js, React, Redux Toolkit, Tailwind CSS, Leaflet
+Backend: Node.js, Express, Prisma
+Database: PostgreSQL with PostGIS
+Other: Socket.IO with Redis adapter for real-time vehicle tracking, Nominatim for place search, OSRM for road routes, Razorpay for payments
+
+How to run locally:
+1. Clone the repo.
+2. Install dependencies in the frontend and backend folders with npm install.
+3. Copy .env.example to .env in each folder and add your own keys. Never commit real keys.
+4. Start PostgreSQL with PostGIS, run Prisma migrations, then start the backend and frontend with npm run dev.
+
+Live demo:
+https://smart-city-map-client-six.vercel.app
