@@ -1,5 +1,5 @@
 ## SmartCity Map: Backend API Server
-
+Frontend Repo : https://github.com/truptikhade/SmartCityMap-Client
 Live Link : https://smart-city-map-client-six.vercel.app
 
 AI-Powered Urban Transit & Navigation Platform Backend built with **Node.js 22**, **Express 5**, **Prisma 7**, **PostgreSQL 17**, and **Socket.io 4**, **Redis**, **JWT auth**, **AI/LLM integration**.
